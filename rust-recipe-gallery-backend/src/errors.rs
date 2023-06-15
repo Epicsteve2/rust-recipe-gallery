@@ -3,7 +3,7 @@ use axum::{
     response::{IntoResponse, Response},
     Json,
 };
-use serde_json::json;
+use serde_json::{json, Value};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -34,3 +34,17 @@ impl IntoResponse for AppError {
 //         })),
 //     )
 // }
+
+/// Utility function for mapping any error into a `500 Internal Server Error`
+/// response.
+pub fn internal_error<E>(err: E) -> (StatusCode, Json<Value>)
+where
+    E: std::error::Error,
+{
+    (
+        StatusCode::INTERNAL_SERVER_ERROR,
+        Json(json!({
+            "error": err.to_string()
+        })),
+    )
+}
