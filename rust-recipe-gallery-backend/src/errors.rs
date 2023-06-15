@@ -10,15 +10,42 @@ use thiserror::Error;
 pub enum AppError {
     #[error(transparent)]
     ValidationError(#[from] validator::ValidationErrors),
+    // I prolly don't need the following cuz I don't do anything special with the errors. But, it's cool to have.
+    #[error(transparent)]
+    DatabaseError(#[from] diesel::result::Error),
+    #[error(transparent)]
+    PoolError(#[from] bb8::RunError<diesel_async::pooled_connection::PoolError>),
+    #[error(transparent)]
+    OtherError(#[from] anyhow::Error),
 }
 
 impl IntoResponse for AppError {
     fn into_response(self) -> Response {
+        dbg!(&self);
         match self {
-            AppError::ValidationError(_) => (
+            AppError::ValidationError(err) => (
                 StatusCode::UNPROCESSABLE_ENTITY,
                 Json(json!({
-                    "error": self.to_string()
+                    "message": err.to_string()
+                })),
+            ),
+            AppError::DatabaseError(err) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({
+                    "message": err.to_string()
+                })),
+            ),
+            AppError::PoolError(err) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({
+                    "message": err.to_string()
+                })),
+            ),
+
+            AppError::OtherError(err) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({
+                    "message": err.to_string()
                 })),
             ),
         }
@@ -44,7 +71,7 @@ where
     (
         StatusCode::INTERNAL_SERVER_ERROR,
         Json(json!({
-            "error": err.to_string()
+            "message": err.to_string()
         })),
     )
 }

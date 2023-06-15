@@ -1,5 +1,6 @@
 FROM mcr.microsoft.com/devcontainers/rust:0-1-bullseye
 
+# I don't think I need. Just bash into the postgres image
 # RUN apt-get update \
 #     && apt-get -y --no-install-recommends install postgresql \
 #     && apt-get clean \

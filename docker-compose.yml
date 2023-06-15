@@ -27,8 +27,6 @@ services:
     container_name: rust-recipe-gallery-backend
     restart: unless-stopped
     build: .
-    environment:
-      PORT: ${RUST_RECIPE_GALLERY_BACKEND_PORT}
     ports:
       - "${RUST_RECIPE_GALLERY_BACKEND_PORT}:${RUST_RECIPE_GALLERY_BACKEND_PORT}"
     depends_on:
