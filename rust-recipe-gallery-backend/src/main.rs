@@ -1,31 +1,29 @@
-use crate::errors::AppError;
-// use database::controller::*;
 mod custom_json_extractor;
 mod database;
 mod errors;
 mod models;
 mod print_request_body_middleware;
 
+use crate::errors::AppError;
 use crate::models::Recipe;
-use axum::body::{self};
-use axum::http::StatusCode;
-use axum::response::IntoResponse;
-use axum::routing::post;
+
 use axum::{
-    middleware::{self},
-    Router,
+    body::Bytes,
+    extract::{MatchedPath, State},
+    http::{HeaderMap, Request, StatusCode},
+    middleware,
+    response::{IntoResponse, Response},
+    routing::post,
+    Json, Router,
 };
 mod print_body_middleware;
-use axum::{extract::State, Json};
 use custom_json_extractor::InputJson;
-use diesel_async::pooled_connection::AsyncDieselConnectionManager;
-use diesel_async::AsyncPgConnection;
+use diesel_async::{pooled_connection::AsyncDieselConnectionManager, AsyncPgConnection};
 use serde::Deserialize;
 use serde_json::json;
-use std::env;
-use std::net::SocketAddr;
-use tower::ServiceBuilder;
-use tower_http::ServiceBuilderExt;
+use std::{env, net::SocketAddr, time::Duration};
+use tower_http::{classify::ServerErrorsFailureClass, trace::TraceLayer};
+use tracing::Span;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 use uuid::Uuid;
 use validator::Validate;
@@ -73,7 +71,53 @@ async fn main() {
         //             print_request_body_middleware::print_request_body,
         //         )),
         // )
+        // I don't think this is doing anything
+        // EDIT: nvm I had to put this after lol
+        // .layer(
+        //     TraceLayer::new_for_http()
+        //         .make_span_with(trace::DefaultMakeSpan::new().level(tracing::Level::INFO))
+        //         .on_response(trace::DefaultOnResponse::new().level(tracing::Level::INFO)),
+        // )
         .layer(middleware::from_fn(print_body_middleware::print_body))
+        .layer(
+            TraceLayer::new_for_http()
+                .make_span_with(|request: &Request<_>| {
+                    // Log the matched route's path (with placeholders not filled in).
+                    // Use request.uri() or OriginalUri if you want the real path.
+                    let matched_path = request
+                        .extensions()
+                        .get::<MatchedPath>()
+                        .map(MatchedPath::as_str);
+
+                    tracing::info_span!(
+                        "http_request",
+                        method = ?request.method(),
+                        matched_path,
+                        some_other_field = tracing::field::Empty,
+                    )
+                })
+                .on_request(|_request: &Request<_>, _span: &Span| {
+                    // You can use `_span.record("some_other_field", value)` in one of these
+                    // closures to attach a value to the initially empty field in the info_span
+                    // created above.
+                })
+                .on_response(|_response: &Response, _latency: Duration, _span: &Span| {
+                    // ...
+                })
+                .on_body_chunk(|_chunk: &Bytes, _latency: Duration, _span: &Span| {
+                    // ...
+                })
+                .on_eos(
+                    |_trailers: Option<&HeaderMap>, _stream_duration: Duration, _span: &Span| {
+                        // ...
+                    },
+                )
+                .on_failure(
+                    |_error: ServerErrorsFailureClass, _latency: Duration, _span: &Span| {
+                        // ...
+                    },
+                ),
+        )
         .with_state(pool)
         .fallback(handler_404);
 
