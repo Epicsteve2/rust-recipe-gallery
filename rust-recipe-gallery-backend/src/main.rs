@@ -11,8 +11,12 @@ use axum::body::{self};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::routing::post;
+use axum::{
+    middleware::{self},
+    Router,
+};
+mod print_body_middleware;
 use axum::{extract::State, Json};
-use axum::{middleware, Router};
 use custom_json_extractor::InputJson;
 use diesel_async::pooled_connection::AsyncDieselConnectionManager;
 use diesel_async::AsyncPgConnection;
@@ -61,13 +65,15 @@ async fn main() {
 
     let app = Router::new()
         .route("/api/recipe/new", post(new_recipe))
-        .layer(
-            ServiceBuilder::new()
-                .map_request_body(body::boxed)
-                .layer(middleware::from_fn(
-                    print_request_body_middleware::print_request_body,
-                )),
-        )
+        // this seems a lot more of a pain...
+        // .layer(
+        //     ServiceBuilder::new()
+        //         .map_request_body(body::boxed)
+        //         .layer(middleware::from_fn(
+        //             print_request_body_middleware::print_request_body,
+        //         )),
+        // )
+        .layer(middleware::from_fn(print_body_middleware::print_body))
         .with_state(pool)
         .fallback(handler_404);
 
@@ -98,7 +104,7 @@ async fn new_recipe(
         title: payload.title,
         // ingredients: payload.ingredients,
     };
-    dbg!(&recipe);
+    // tracing::info!("{:?}", &recipe);
 
     let result = database::controller::post_recipe(pool, recipe).await?;
     Ok((StatusCode::CREATED, result))

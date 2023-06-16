@@ -44,11 +44,9 @@ where
     type Rejection = (StatusCode, Json<Value>);
 
     async fn from_request_parts(_parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
-        // async fn from_request_parts(_parts: &mut Parts, state: &S) -> Result<Self, bb8::RunError<diesel_async::pooled_connection::PoolError>> {
         let pool = Pool::from_ref(state);
 
         let conn = pool.get_owned().await.map_err(internal_error)?;
-        // let conn = pool.get_owned().await?;
 
         Ok(Self(conn))
     }
