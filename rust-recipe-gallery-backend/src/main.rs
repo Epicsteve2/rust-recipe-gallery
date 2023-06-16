@@ -84,15 +84,16 @@ async fn main() {
                 .make_span_with(|request: &Request<_>| {
                     // Log the matched route's path (with placeholders not filled in).
                     // Use request.uri() or OriginalUri if you want the real path.
-                    let matched_path = request
+                    let uri = request
                         .extensions()
                         .get::<MatchedPath>()
                         .map(MatchedPath::as_str);
 
                     tracing::info_span!(
-                        "http_request",
+                        "request",
                         method = ?request.method(),
-                        matched_path,
+                        uri,
+                        version = ?request.version(),
                         some_other_field = tracing::field::Empty,
                     )
                 })
