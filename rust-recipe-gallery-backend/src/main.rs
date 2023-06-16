@@ -74,10 +74,41 @@ async fn main() {
         // )
         .layer(middleware::from_fn(print_body_middleware::print_body))
         .layer(
+            // I attempted to replace this whole block to change the whole span. it doesn't work well. prolly gotta do something else
+            // {
+            //     if tracing_subscriber::filter::LevelFilter::current() >= tracing::Level::DEBUG {
+            //         let tmp: TraceLayer<
+            //             tower_http::classify::SharedClassifier<
+            //                 tower_http::classify::ServerErrorsAsFailures,
+            //             >,
+            //             DefaultMakeSpan,
+            //         > = TraceLayer::new_for_http().make_span_with(
+            //             tower_http::trace::DefaultMakeSpan::new().level(tracing::Level::INFO),
+            //         );
+            //         tmp
+            //     } else {
+            //         let tmp: TraceLayer<
+            //             tower_http::classify::SharedClassifier<
+            //                 tower_http::classify::ServerErrorsAsFailures,
+            //             >,
+            //             Span,
+            //         > = TraceLayer::new_for_http().make_span_with(tracing::debug_span!(
+            //             "full request",
+            //             request = tracing::field::Empty,
+            //         ));
+            //         tmp
+            //     }
+            // }
             TraceLayer::new_for_http()
-                .make_span_with(
-                    tower_http::trace::DefaultMakeSpan::new().level(tracing::Level::INFO), // can also .include_headers(true)
-                )
+                .make_span_with({
+                    let span =
+                        tower_http::trace::DefaultMakeSpan::new().level(tracing::Level::INFO); // can also .include_headers(true)
+                    if tracing_subscriber::filter::LevelFilter::current() >= tracing::Level::DEBUG {
+                        span.include_headers(true)
+                    } else {
+                        span
+                    }
+                })
                 .on_request(tower_http::trace::DefaultOnRequest::new().level(tracing::Level::INFO))
                 // .make_span_with(tracing::debug_span!(
                 //     "full request",
@@ -96,6 +127,18 @@ async fn main() {
                 .on_eos(tower_http::trace::DefaultOnEos::new().level(tracing::Level::INFO))
                 .on_failure(tower_http::trace::DefaultOnFailure::new().level(tracing::Level::INFO)),
         )
+        // .layer(
+        //     TraceLayer::new_for_http()
+        //         .make_span_with(tracing::debug_span!(
+        //             "full request",
+        //             request = tracing::field::Empty
+        //         ))
+        //         .on_request(|_request: &Request<_>, _span: &Span| {
+        //             // tracing::debug_span!("full request", "{:?}", &_request);
+        //             // tracing::debug!("{:?}", &_request);
+        //             _span.record("request", format!("{:?}", &_request));
+        //         }),
+        // )
         .with_state(pool)
         .fallback(handler_404);
 
