@@ -45,8 +45,9 @@ async fn main() {
     // docs are really confusing...
     tracing_subscriber::registry()
         .with(
-            tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| "rust_recipe_gallery_backend=info".into()), // idk why, but dashes are replaced with underscores...
+            tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| {
+                "rust_recipe_gallery_backend=info,tower_http::trace=info".into()
+            }), // idk why, but dashes are replaced with underscores...
         )
         .with(tracing_subscriber::fmt::layer().pretty())
         .init();
@@ -71,53 +72,29 @@ async fn main() {
         //             print_request_body_middleware::print_request_body,
         //         )),
         // )
-        // I don't think this is doing anything
-        // EDIT: nvm I had to put this after lol
-        // .layer(
-        //     TraceLayer::new_for_http()
-        //         .make_span_with(trace::DefaultMakeSpan::new().level(tracing::Level::INFO))
-        //         .on_response(trace::DefaultOnResponse::new().level(tracing::Level::INFO)),
-        // )
         .layer(middleware::from_fn(print_body_middleware::print_body))
         .layer(
             TraceLayer::new_for_http()
-                .make_span_with(|request: &Request<_>| {
-                    // Log the matched route's path (with placeholders not filled in).
-                    // Use request.uri() or OriginalUri if you want the real path.
-                    let uri = request
-                        .extensions()
-                        .get::<MatchedPath>()
-                        .map(MatchedPath::as_str);
-
-                    tracing::info_span!(
-                        "request",
-                        method = ?request.method(),
-                        uri,
-                        version = ?request.version(),
-                        some_other_field = tracing::field::Empty,
-                    )
-                })
-                .on_request(|_request: &Request<_>, _span: &Span| {
-                    // You can use `_span.record("some_other_field", value)` in one of these
-                    // closures to attach a value to the initially empty field in the info_span
-                    // created above.
-                })
-                .on_response(|_response: &Response, _latency: Duration, _span: &Span| {
-                    // ...
-                })
-                .on_body_chunk(|_chunk: &Bytes, _latency: Duration, _span: &Span| {
-                    // ...
-                })
-                .on_eos(
-                    |_trailers: Option<&HeaderMap>, _stream_duration: Duration, _span: &Span| {
-                        // ...
-                    },
+                .make_span_with(
+                    tower_http::trace::DefaultMakeSpan::new().level(tracing::Level::INFO), // can also .include_headers(true)
                 )
-                .on_failure(
-                    |_error: ServerErrorsFailureClass, _latency: Duration, _span: &Span| {
-                        // ...
-                    },
-                ),
+                .on_request(tower_http::trace::DefaultOnRequest::new().level(tracing::Level::INFO))
+                // .make_span_with(tracing::debug_span!(
+                //     "full request",
+                //     request = tracing::field::Empty
+                // ))
+                // .on_request(|_request: &Request<_>, _span: &Span| {
+                //     // tracing::debug_span!("full request", "{:?}", &_request);
+                //     // tracing::debug!("{:?}", &_request);
+                //     // _span.request = &_request;
+                //     _span.record("request", format!("{:?}", &_request));
+                // })
+                .on_response(
+                    tower_http::trace::DefaultOnResponse::new().level(tracing::Level::INFO),
+                )
+                .on_body_chunk(tower_http::trace::DefaultOnBodyChunk::new())
+                .on_eos(tower_http::trace::DefaultOnEos::new().level(tracing::Level::INFO))
+                .on_failure(tower_http::trace::DefaultOnFailure::new().level(tracing::Level::INFO)),
         )
         .with_state(pool)
         .fallback(handler_404);

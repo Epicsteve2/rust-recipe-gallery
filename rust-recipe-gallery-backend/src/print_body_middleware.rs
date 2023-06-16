@@ -1,4 +1,3 @@
-use anyhow::anyhow;
 use axum::response::IntoResponse;
 use axum::{
     body::{Body, Bytes},
