@@ -1,5 +1,5 @@
 use crate::errors::AppError;
-use crate::Pool;
+use crate::{PatchRecipe, Pool};
 // use anyhow::Error;
 use axum::async_trait;
 use axum::extract::{FromRef, FromRequestParts};
@@ -47,6 +47,27 @@ pub async fn read_one_recipe(pool: Pool, recipe_id: Uuid) -> Result<Recipe, AppE
     dbg!(&result);
 
     Ok(result)
+}
+
+pub async fn update_recipe(
+    pool: Pool,
+    recipe_id: Uuid,
+    new_recipe: PatchRecipe,
+) -> Result<Recipe, AppError> {
+    let conn = &mut pool.get().await?;
+    use crate::database::schema::recipes;
+
+    if let Some(new_title) = new_recipe.title {
+        let result = diesel::update(recipes::table.find(recipe_id))
+            .set(recipes::title.eq(new_title))
+            .returning(Recipe::as_returning())
+            .get_result(conn)
+            .await?;
+        Ok(result)
+    } else {
+        // idk what to do here. man, diesel is confusing
+        panic!()
+    }
 }
 
 // we can also write a custom extractor that grabs a connection from the pool

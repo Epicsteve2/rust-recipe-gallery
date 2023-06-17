@@ -8,6 +8,7 @@ use serde::{de::DeserializeOwned, Serialize};
 // We define our own `Path` extractor that customizes the error from `axum::extract::Path`
 pub struct InputPath<T>(pub T);
 
+// Too much of a pain to move this into errors
 #[async_trait]
 impl<S, T> FromRequestParts<S> for InputPath<T>
 where

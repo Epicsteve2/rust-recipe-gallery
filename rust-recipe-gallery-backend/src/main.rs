@@ -36,6 +36,13 @@ struct PostRecipe {
     // ingredients: Vec<String>,
 }
 
+#[derive(Debug, Deserialize, Validate)]
+pub struct PatchRecipe {
+    // #[validate(required)]
+    // TODO: validate
+    title: Option<String>,
+}
+
 pub type Pool = bb8::Pool<AsyncDieselConnectionManager<AsyncPgConnection>>;
 
 #[tokio::main]
@@ -63,7 +70,10 @@ async fn main() -> Result<(), anyhow::Error> {
     let app = Router::new()
         .route("/api/recipe/new", post(post_recipe))
         .route("/api/recipe", get(get_all_recipe))
-        .route("/api/recipe/:recipe_id", get(get_recipe))
+        .route(
+            "/api/recipe/:recipe_id",
+            get(get_recipe).patch(patch_recipe),
+        )
         .layer(middleware::from_fn(print_body_middleware::print_body))
         .layer(
             TraceLayer::new_for_http()
@@ -114,6 +124,15 @@ async fn get_recipe(
     InputPath(recipe_id): InputPath<Uuid>,
 ) -> Result<impl IntoResponse, AppError> {
     let result = database::controller::read_one_recipe(pool, recipe_id).await?;
+    Ok((StatusCode::OK, Json(result)))
+}
+
+async fn patch_recipe(
+    State(pool): State<Pool>,
+    InputPath(recipe_id): InputPath<Uuid>,
+    InputJson(payload): InputJson<PatchRecipe>,
+) -> Result<impl IntoResponse, AppError> {
+    let result = database::controller::update_recipe(pool, recipe_id, payload).await?;
     Ok((StatusCode::OK, Json(result)))
 }
 

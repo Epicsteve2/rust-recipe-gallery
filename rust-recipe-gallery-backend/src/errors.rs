@@ -1,10 +1,8 @@
 use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
-    Json,
 };
 use diesel::result::Error::NotFound;
-use serde_json::json;
 use thiserror::Error;
 
 use crate::to_response;
@@ -21,8 +19,6 @@ pub enum AppError {
     BodyMiddleware { direction: String, body: String },
     #[error(transparent)]
     OtherError(#[from] anyhow::Error),
-    // #[error(transparent)]
-    // Path(#[from] PathE),
 }
 
 impl IntoResponse for AppError {
