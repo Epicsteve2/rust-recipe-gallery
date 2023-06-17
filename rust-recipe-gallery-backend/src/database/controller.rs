@@ -57,16 +57,23 @@ pub async fn update_recipe(
     let conn = &mut pool.get().await?;
     use crate::database::schema::recipes;
 
+    let old_recipe = recipes::table
+        .filter(recipes::id.eq(recipe_id))
+        .first::<Recipe>(conn)
+        .await?;
+
+    let result = diesel::update(recipes::table.find(recipe_id));
+
+    // possible way to make this into a loop? if there's multiple places to update
     if let Some(new_title) = new_recipe.title {
-        let result = diesel::update(recipes::table.find(recipe_id))
+        let result = result
             .set(recipes::title.eq(new_title))
             .returning(Recipe::as_returning())
             .get_result(conn)
             .await?;
         Ok(result)
     } else {
-        // idk what to do here. man, diesel is confusing
-        panic!()
+        Ok(old_recipe)
     }
 }
 
