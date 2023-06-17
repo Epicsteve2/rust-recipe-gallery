@@ -40,7 +40,7 @@ impl IntoResponse for AppError {
                     "message": err.to_string()
                 })),
             ),
-            AppError::OtherError(_) => {
+            AppError::OtherError { .. } => {
                 to_response(StatusCode::INTERNAL_SERVER_ERROR, &self.to_string())
             }
         }
@@ -50,9 +50,27 @@ impl IntoResponse for AppError {
 
 // the '?' operator doesn't work in some functions
 // idk why it happens, but this is the workaround
+#[allow(dead_code)]
 pub fn wrap_anyhow<E>(err: E) -> AppError
 where
     E: Into<anyhow::Error>,
 {
     AppError::OtherError(err.into())
 }
+
+// or use this
+// more info: https://github.com/dtolnay/thiserror/issues/154
+// and https://github.com/dtolnay/thiserror/issues/52
+impl From<bb8::RunError<diesel_async::pooled_connection::PoolError>> for AppError {
+    fn from(err: bb8::RunError<diesel_async::pooled_connection::PoolError>) -> Self {
+        AppError::OtherError(err.into())
+    }
+}
+
+// type B = axum::body::HttpBody<Data = Bytes>;
+// use axum::body::{Body, Bytes};
+// impl From<B> for AppError {
+//     fn from(err: B) -> Self {
+//         AppError::OtherError(err.into())
+//     }
+// }

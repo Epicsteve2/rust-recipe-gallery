@@ -36,11 +36,13 @@ where
     let bytes = hyper::body::to_bytes(body)
         .await
         // not sure why the normal questionmark doesn't work...
+        // Body is from http_body::Body!!!
         .map_err(|err| AppError::BodyMiddleware {
             direction: direction.to_string(),
             body: err.to_string(),
         })?;
 
+    // TODO: possible pretty print?
     if let Ok(body) = std::str::from_utf8(&bytes) {
         tracing::info!("{} body = {:?}", direction, body);
     }
