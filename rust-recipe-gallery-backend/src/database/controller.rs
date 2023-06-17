@@ -1,4 +1,4 @@
-use crate::errors::{internal_error, AppError};
+use crate::errors::AppError;
 use crate::Pool;
 use axum::async_trait;
 use axum::extract::{FromRef, FromRequestParts};
@@ -8,8 +8,6 @@ use diesel::prelude::*;
 use diesel_async::{
     pooled_connection::AsyncDieselConnectionManager, AsyncPgConnection, RunQueryDsl,
 };
-use hyper::StatusCode;
-use serde_json::Value;
 
 use crate::Recipe;
 
@@ -41,12 +39,11 @@ where
     S: Send + Sync,
     Pool: FromRef<S>,
 {
-    type Rejection = (StatusCode, Json<Value>);
+    type Rejection = AppError;
 
     async fn from_request_parts(_parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
         let pool = Pool::from_ref(state);
-
-        let conn = pool.get_owned().await.map_err(internal_error)?;
+        let conn = pool.get_owned().await?;
 
         Ok(Self(conn))
     }

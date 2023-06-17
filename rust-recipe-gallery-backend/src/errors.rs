@@ -25,7 +25,8 @@ pub enum AppError {
 
 impl IntoResponse for AppError {
     fn into_response(self) -> Response {
-        tracing::debug!("{:?}", &self);
+        // maybe this should be trace?
+        tracing::debug!("{:#?}", &self);
         match &self {
             AppError::BodyMiddleware { .. } => (
                 StatusCode::BAD_REQUEST,
@@ -39,10 +40,10 @@ impl IntoResponse for AppError {
                     "message": err.body_text()
                 })),
             ),
-            AppError::ValidationError(err) => (
+            AppError::ValidationError(_) => (
                 StatusCode::UNPROCESSABLE_ENTITY,
                 Json(json!({
-                    "message": err.to_string()
+                    "message": self.to_string()
                 })),
             ),
             AppError::DatabaseError(err) => (
@@ -51,17 +52,17 @@ impl IntoResponse for AppError {
                     "message": err.to_string()
                 })),
             ),
-            AppError::PoolError(err) => (
+            AppError::PoolError(_) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(json!({
-                    "message": err.to_string()
+                    "message": self.to_string()
                 })),
             ),
 
-            AppError::OtherError(err) => (
+            AppError::OtherError(_) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(json!({
-                    "message": err.to_string()
+                    "message": self.to_string()
                 })),
             ),
         }

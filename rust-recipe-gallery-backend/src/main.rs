@@ -2,28 +2,21 @@ mod custom_json_extractor;
 mod database;
 mod errors;
 mod models;
-mod print_request_body_middleware;
+mod print_body_middleware;
 
 use crate::errors::AppError;
 use crate::models::Recipe;
 
 use axum::{
-    body::Bytes,
-    extract::{MatchedPath, State},
-    http::{HeaderMap, Request, StatusCode},
-    middleware,
-    response::{IntoResponse, Response},
-    routing::post,
-    Json, Router,
+    extract::State, http::StatusCode, middleware, response::IntoResponse, routing::post, Json,
+    Router,
 };
-mod print_body_middleware;
 use custom_json_extractor::InputJson;
 use diesel_async::{pooled_connection::AsyncDieselConnectionManager, AsyncPgConnection};
 use serde::Deserialize;
 use serde_json::json;
-use std::{env, net::SocketAddr, time::Duration};
-use tower_http::{classify::ServerErrorsFailureClass, trace::TraceLayer};
-use tracing::Span;
+use std::{env, net::SocketAddr};
+use tower_http::trace::TraceLayer;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 use uuid::Uuid;
 use validator::Validate;
@@ -47,7 +40,7 @@ async fn main() {
         .with(
             tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| {
                 "rust_recipe_gallery_backend=info,tower_http::trace=info".into()
-            }), // idk why, but dashes are replaced with underscores...
+            }),
         )
         .with(tracing_subscriber::fmt::layer().pretty())
         .init();
@@ -64,41 +57,8 @@ async fn main() {
 
     let app = Router::new()
         .route("/api/recipe/new", post(new_recipe))
-        // this seems a lot more of a pain...
-        // .layer(
-        //     ServiceBuilder::new()
-        //         .map_request_body(body::boxed)
-        //         .layer(middleware::from_fn(
-        //             print_request_body_middleware::print_request_body,
-        //         )),
-        // )
         .layer(middleware::from_fn(print_body_middleware::print_body))
         .layer(
-            // I attempted to replace this whole block to change the whole span. it doesn't work well. prolly gotta do something else
-            // {
-            //     if tracing_subscriber::filter::LevelFilter::current() >= tracing::Level::DEBUG {
-            //         let tmp: TraceLayer<
-            //             tower_http::classify::SharedClassifier<
-            //                 tower_http::classify::ServerErrorsAsFailures,
-            //             >,
-            //             DefaultMakeSpan,
-            //         > = TraceLayer::new_for_http().make_span_with(
-            //             tower_http::trace::DefaultMakeSpan::new().level(tracing::Level::INFO),
-            //         );
-            //         tmp
-            //     } else {
-            //         let tmp: TraceLayer<
-            //             tower_http::classify::SharedClassifier<
-            //                 tower_http::classify::ServerErrorsAsFailures,
-            //             >,
-            //             Span,
-            //         > = TraceLayer::new_for_http().make_span_with(tracing::debug_span!(
-            //             "full request",
-            //             request = tracing::field::Empty,
-            //         ));
-            //         tmp
-            //     }
-            // }
             TraceLayer::new_for_http()
                 .make_span_with({
                     let span =
@@ -110,16 +70,6 @@ async fn main() {
                     }
                 })
                 .on_request(tower_http::trace::DefaultOnRequest::new().level(tracing::Level::INFO))
-                // .make_span_with(tracing::debug_span!(
-                //     "full request",
-                //     request = tracing::field::Empty
-                // ))
-                // .on_request(|_request: &Request<_>, _span: &Span| {
-                //     // tracing::debug_span!("full request", "{:?}", &_request);
-                //     // tracing::debug!("{:?}", &_request);
-                //     // _span.request = &_request;
-                //     _span.record("request", format!("{:?}", &_request));
-                // })
                 .on_response(
                     tower_http::trace::DefaultOnResponse::new().level(tracing::Level::INFO),
                 )
@@ -127,18 +77,6 @@ async fn main() {
                 .on_eos(tower_http::trace::DefaultOnEos::new().level(tracing::Level::INFO))
                 .on_failure(tower_http::trace::DefaultOnFailure::new().level(tracing::Level::INFO)),
         )
-        // .layer(
-        //     TraceLayer::new_for_http()
-        //         .make_span_with(tracing::debug_span!(
-        //             "full request",
-        //             request = tracing::field::Empty
-        //         ))
-        //         .on_request(|_request: &Request<_>, _span: &Span| {
-        //             // tracing::debug_span!("full request", "{:?}", &_request);
-        //             // tracing::debug!("{:?}", &_request);
-        //             _span.record("request", format!("{:?}", &_request));
-        //         }),
-        // )
         .with_state(pool)
         .fallback(handler_404);
 
@@ -150,6 +88,7 @@ async fn main() {
         .unwrap();
 }
 
+// not returning error cuz nothing really errored out
 async fn handler_404() -> impl IntoResponse {
     (
         StatusCode::NOT_FOUND,
@@ -169,8 +108,6 @@ async fn new_recipe(
         title: payload.title,
         // ingredients: payload.ingredients,
     };
-    // tracing::info!("{:?}", &recipe);
-
     let result = database::controller::post_recipe(pool, recipe).await?;
     Ok((StatusCode::CREATED, result))
 }

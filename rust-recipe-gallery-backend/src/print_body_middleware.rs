@@ -12,6 +12,7 @@ pub async fn print_body(
     req: Request<Body>,
     next: Next<Body>,
 ) -> Result<impl IntoResponse, AppError> {
+    tracing::debug!("{:#?}", req);
     let (parts, body) = req.into_parts();
     let bytes = buffer_and_print("request", body).await?;
     let req = Request::from_parts(parts, Body::from(bytes));
@@ -21,6 +22,7 @@ pub async fn print_body(
     let (parts, body) = res.into_parts();
     let bytes = buffer_and_print("response", body).await?;
     let res = Response::from_parts(parts, Body::from(bytes));
+    tracing::debug!("{:#?}", res);
 
     Ok(res)
 }
@@ -33,6 +35,7 @@ where
     // let bytes = hyper::body::to_bytes(body).await.map_err(wrap_anyhow)?;
     let bytes = hyper::body::to_bytes(body)
         .await
+        // not sure why the normal questionmark doesn't work...
         .map_err(|err| AppError::BodyMiddleware {
             direction: direction.to_string(),
             body: err.to_string(),
