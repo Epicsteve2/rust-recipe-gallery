@@ -3,7 +3,6 @@ use crate::Pool;
 use axum::async_trait;
 use axum::extract::{FromRef, FromRequestParts};
 use axum::http::request::Parts;
-use axum::Json;
 use diesel::prelude::*;
 use diesel_async::{
     pooled_connection::AsyncDieselConnectionManager, AsyncPgConnection, RunQueryDsl,
@@ -11,7 +10,7 @@ use diesel_async::{
 
 use crate::Recipe;
 
-pub async fn post_recipe(pool: Pool, recipe: Recipe) -> Result<Json<Recipe>, AppError> {
+pub async fn post_recipe(pool: Pool, recipe: Recipe) -> Result<Recipe, AppError> {
     let mut conn = pool.get().await?;
     use super::schema::recipes;
 
@@ -21,7 +20,7 @@ pub async fn post_recipe(pool: Pool, recipe: Recipe) -> Result<Json<Recipe>, App
         .get_result(&mut conn)
         .await?;
 
-    Ok(Json(result))
+    Ok(result)
 }
 
 // we can also write a custom extractor that grabs a connection from the pool

@@ -70,14 +70,14 @@ impl IntoResponse for AppError {
     }
 }
 
-// pub fn send_response(status: StatusCode, message: &str) -> (StatusCode, Json<Value>) {
-//     (
-//         status,
-//         Json(json!({
-//             "message": message
-//         })),
-//     )
-// }
+pub fn send_response(status: StatusCode, message: &str) -> (StatusCode, Json<Value>) {
+    (
+        status,
+        Json(json!({
+            "message": message
+        })),
+    )
+}
 
 /// Utility function for mapping any error into a `500 Internal Server Error`
 /// response.

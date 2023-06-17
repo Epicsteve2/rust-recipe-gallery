@@ -46,9 +46,8 @@ async fn main() {
         .init();
 
     let port = std::env::var("RUST_RECIPE_GALLERY_BACKEND_PORT")
-        .unwrap_or("7979".to_string())
-        .parse::<u16>()
-        .unwrap();
+        .map(|port_string| port_string.parse::<u16>().unwrap())
+        .unwrap_or(7979);
     let database_url = env::var("DATABASE_URL")
         .unwrap_or("postgres://rust-recipe-gallery:123456@db/recipe-gallery".to_string());
 
@@ -60,9 +59,10 @@ async fn main() {
         .layer(middleware::from_fn(print_body_middleware::print_body))
         .layer(
             TraceLayer::new_for_http()
+                // this is really overkill lol
                 .make_span_with({
                     let span =
-                        tower_http::trace::DefaultMakeSpan::new().level(tracing::Level::INFO); // can also .include_headers(true)
+                        tower_http::trace::DefaultMakeSpan::new().level(tracing::Level::INFO);
                     if tracing_subscriber::filter::LevelFilter::current() >= tracing::Level::DEBUG {
                         span.include_headers(true)
                     } else {
@@ -109,5 +109,5 @@ async fn new_recipe(
         // ingredients: payload.ingredients,
     };
     let result = database::controller::post_recipe(pool, recipe).await?;
-    Ok((StatusCode::CREATED, result))
+    Ok((StatusCode::CREATED, Json(result)))
 }
