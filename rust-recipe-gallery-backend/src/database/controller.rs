@@ -1,4 +1,4 @@
-use crate::errors::AppError;
+use crate::errors::{wrap_anyhow, AppError};
 use crate::Pool;
 use axum::async_trait;
 use axum::extract::{FromRef, FromRequestParts};
@@ -11,7 +11,7 @@ use diesel_async::{
 use crate::Recipe;
 
 pub async fn post_recipe(pool: Pool, recipe: Recipe) -> Result<Recipe, AppError> {
-    let mut conn = pool.get().await?;
+    let mut conn = pool.get().await.map_err(wrap_anyhow)?;
     use super::schema::recipes;
 
     let result = diesel::insert_into(recipes::table)
@@ -42,7 +42,7 @@ where
 
     async fn from_request_parts(_parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
         let pool = Pool::from_ref(state);
-        let conn = pool.get_owned().await?;
+        let conn = pool.get_owned().await.map_err(wrap_anyhow)?;
 
         Ok(Self(conn))
     }

@@ -14,7 +14,7 @@ use axum::{
 use custom_json_extractor::InputJson;
 use diesel_async::{pooled_connection::AsyncDieselConnectionManager, AsyncPgConnection};
 use serde::Deserialize;
-use serde_json::json;
+use serde_json::{json, Value};
 use std::{env, net::SocketAddr};
 use tower_http::trace::TraceLayer;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
@@ -59,16 +59,9 @@ async fn main() {
         .layer(middleware::from_fn(print_body_middleware::print_body))
         .layer(
             TraceLayer::new_for_http()
-                // this is really overkill lol
-                .make_span_with({
-                    let span =
-                        tower_http::trace::DefaultMakeSpan::new().level(tracing::Level::INFO);
-                    if tracing_subscriber::filter::LevelFilter::current() >= tracing::Level::DEBUG {
-                        span.include_headers(true)
-                    } else {
-                        span
-                    }
-                })
+                .make_span_with(
+                    tower_http::trace::DefaultMakeSpan::new().level(tracing::Level::INFO),
+                )
                 .on_request(tower_http::trace::DefaultOnRequest::new().level(tracing::Level::INFO))
                 .on_response(
                     tower_http::trace::DefaultOnResponse::new().level(tracing::Level::INFO),
@@ -110,4 +103,13 @@ async fn new_recipe(
     };
     let result = database::controller::post_recipe(pool, recipe).await?;
     Ok((StatusCode::CREATED, Json(result)))
+}
+
+pub fn to_response(status: StatusCode, message: &str) -> (StatusCode, Json<Value>) {
+    (
+        status,
+        Json(json!({
+            "message": message
+        })),
+    )
 }
