@@ -3,6 +3,7 @@ use axum::{
     response::{IntoResponse, Response},
     Json,
 };
+use diesel::result::Error::NotFound;
 use serde_json::json;
 use thiserror::Error;
 
@@ -20,6 +21,8 @@ pub enum AppError {
     BodyMiddleware { direction: String, body: String },
     #[error(transparent)]
     OtherError(#[from] anyhow::Error),
+    // #[error(transparent)]
+    // Path(#[from] PathE),
 }
 
 impl IntoResponse for AppError {
@@ -34,12 +37,11 @@ impl IntoResponse for AppError {
             AppError::ValidationError(_) => {
                 to_response(StatusCode::UNPROCESSABLE_ENTITY, &self.to_string())
             }
-            AppError::DatabaseError(err) => (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({
-                    "message": err.to_string()
-                })),
-            ),
+            AppError::DatabaseError(err) => match err {
+                // i wish this could be better... somehow, embed what wasn't found
+                NotFound => to_response(StatusCode::NOT_FOUND, &err.to_string()),
+                _ => to_response(StatusCode::INTERNAL_SERVER_ERROR, &self.to_string()),
+            },
             AppError::OtherError { .. } => {
                 to_response(StatusCode::INTERNAL_SERVER_ERROR, &self.to_string())
             }
@@ -66,11 +68,3 @@ impl From<bb8::RunError<diesel_async::pooled_connection::PoolError>> for AppErro
         AppError::OtherError(err.into())
     }
 }
-
-// type B = axum::body::HttpBody<Data = Bytes>;
-// use axum::body::{Body, Bytes};
-// impl From<B> for AppError {
-//     fn from(err: B) -> Self {
-//         AppError::OtherError(err.into())
-//     }
-// }

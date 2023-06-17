@@ -1,7 +1,7 @@
 use diesel::prelude::*;
 use uuid::Uuid;
 
-#[derive(Debug, serde::Serialize, Queryable, Selectable, Insertable)]
+#[derive(Debug, serde::Serialize, Queryable, Selectable, Insertable, Identifiable)]
 #[diesel(table_name = crate::database::schema::recipes)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct Recipe {

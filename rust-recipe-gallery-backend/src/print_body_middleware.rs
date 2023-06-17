@@ -36,7 +36,8 @@ where
     let bytes = hyper::body::to_bytes(body)
         .await
         // not sure why the normal questionmark doesn't work...
-        // Body is from http_body::Body!!!
+        // Body is from http_body::Body
+        // TODO: Possible change?
         .map_err(|err| AppError::BodyMiddleware {
             direction: direction.to_string(),
             body: err.to_string(),

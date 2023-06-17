@@ -8,10 +8,11 @@ use diesel::prelude::*;
 use diesel_async::{
     pooled_connection::AsyncDieselConnectionManager, AsyncPgConnection, RunQueryDsl,
 };
+use uuid::Uuid;
 
 use crate::Recipe;
 
-pub async fn post_recipe(pool: Pool, recipe: Recipe) -> Result<Recipe, AppError> {
+pub async fn create_recipe(pool: Pool, recipe: Recipe) -> Result<Recipe, AppError> {
     let mut conn = pool.get().await?;
     use super::schema::recipes;
 
@@ -20,6 +21,30 @@ pub async fn post_recipe(pool: Pool, recipe: Recipe) -> Result<Recipe, AppError>
         .returning(Recipe::as_returning())
         .get_result(&mut conn)
         .await?;
+
+    Ok(result)
+}
+
+pub async fn read_all_recipe(pool: Pool) -> Result<Vec<Recipe>, AppError> {
+    let mut conn = &mut pool.get().await?;
+    use crate::database::schema::recipes::dsl::*;
+    // use crate::database::schema::recipes::dsl::recipes;
+
+    let result = recipes.select(Recipe::as_select()).load(&mut conn).await?;
+
+    Ok(result)
+}
+
+pub async fn read_one_recipe(pool: Pool, recipe_id: Uuid) -> Result<Recipe, AppError> {
+    let conn = &mut pool.get().await?;
+    use crate::database::schema::recipes;
+
+    let result = recipes::table
+        .filter(recipes::id.eq(recipe_id))
+        .first::<Recipe>(conn)
+        .await?;
+
+    dbg!(&result);
 
     Ok(result)
 }

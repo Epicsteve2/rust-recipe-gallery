@@ -23,6 +23,26 @@ services:
     env_file:
       - .env
 
+  pgadmin:
+    profiles:
+      - donotstart
+    container_name: rust-recipe-gallery-pgadmin
+    image: dpage/pgadmin4:7.3
+    restart: unless-stopped
+    environment:
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: 'False'
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: root
+      # TODO: Maybe use 2 networks?
+    networks:
+      - rust_recipe_gallery
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "5050:80"
+
   backend:
     container_name: rust-recipe-gallery-backend
     restart: unless-stopped
@@ -30,9 +50,39 @@ services:
     ports:
       - "${RUST_RECIPE_GALLERY_BACKEND_PORT}:${RUST_RECIPE_GALLERY_BACKEND_PORT}"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     networks:
       - rust_recipe_gallery
+    env_file:
+      - .env
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "nc",
+          "-vz",
+          "localhost",
+          "${RUST_RECIPE_GALLERY_BACKEND_PORT}"
+        ]
+      interval: 5s
+
+  pgweb:
+    container_name: rust-recipe-gallery-pgweb
+    restart: unless-stopped
+    image: sosedoff/pgweb:0.14.1
+    environment:
+      PGWEB_DATABASE_URL: ${DATABASE_URL}?sslmode=disable
+    ports:
+      - 8081:8081
+    networks:
+      - rust_recipe_gallery
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "nc", "-vz", "localhost", "8081" ]
+      interval: 5s
     env_file:
       - .env
 
