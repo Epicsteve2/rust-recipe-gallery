@@ -2,7 +2,10 @@ use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
 };
-use diesel::result::Error::{NotFound, QueryBuilderError};
+use diesel::result::{
+    DatabaseErrorKind,
+    Error::{DatabaseError, NotFound, QueryBuilderError},
+};
 use thiserror::Error;
 
 use crate::to_response;
@@ -38,6 +41,9 @@ impl IntoResponse for AppError {
                 NotFound => to_response(StatusCode::NOT_FOUND, &err.to_string()),
                 // TODO: same
                 QueryBuilderError(_) => to_response(StatusCode::OK, &self.to_string()),
+                DatabaseError(DatabaseErrorKind::ForeignKeyViolation, _) => {
+                    to_response(StatusCode::UNPROCESSABLE_ENTITY, &self.to_string())
+                }
                 _ => to_response(StatusCode::INTERNAL_SERVER_ERROR, &self.to_string()),
             },
             AppError::OtherError { .. } => {

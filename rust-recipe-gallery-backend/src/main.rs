@@ -6,6 +6,7 @@ mod models;
 use crate::models::{PatchRecipe, PostRecipe, Recipe};
 use crate::{errors::AppError, middleware::print_body_middleware};
 
+use axum::routing::delete;
 use axum::{
     extract::State,
     http::StatusCode,
@@ -16,6 +17,7 @@ use axum::{
 };
 use diesel_async::{pooled_connection::AsyncDieselConnectionManager, AsyncPgConnection};
 use middleware::{custom_json_extractor::InputJson, custom_path_extractor::InputPath};
+use models::{Comment, PatchComment, PostComment};
 use serde_json::{json, Value};
 use std::{env, net::SocketAddr};
 use tower_http::trace::TraceLayer;
@@ -53,6 +55,14 @@ async fn main() -> Result<(), anyhow::Error> {
         .route(
             "/api/recipe/:recipe_id",
             get(get_recipe).patch(patch_recipe).delete(delete_recipe),
+        )
+        .route(
+            "/api/recipe/:recipe_id/comments",
+            get(get_comments).patch(patch_comment).post(post_comment),
+        )
+        .route(
+            "/api/recipe/:recipe_id/comments/:comment_id",
+            delete(delete_comment),
         )
         .layer(auxm_middleware::from_fn(print_body_middleware::print_body))
         .layer(
@@ -124,6 +134,51 @@ async fn delete_recipe(
     InputPath(recipe_id): InputPath<Uuid>,
 ) -> Result<impl IntoResponse, AppError> {
     let result = database::controller::delete_recipe(pool, recipe_id).await?;
+    Ok((StatusCode::OK, Json(result)))
+}
+
+async fn post_comment(
+    State(pool): State<Pool>,
+    InputJson(payload): InputJson<PostComment>,
+) -> Result<impl IntoResponse, AppError> {
+    payload.validate()?;
+    let comment = Comment {
+        id: Uuid::new_v4(),
+        recipe_id: payload.recipe_id,
+        comment: payload.comment,
+        // ingredients: payload.ingredients,
+    };
+    let result = database::controller::create_comment(pool, comment).await?;
+    Ok((StatusCode::CREATED, Json(result)))
+}
+
+async fn get_comments(State(pool): State<Pool>) -> Result<impl IntoResponse, AppError> {
+    let result = database::controller::read_all_comments(pool).await?;
+    Ok((
+        StatusCode::CREATED,
+        Json(json!(
+            {
+                "results": result
+            }
+        )),
+    ))
+}
+
+async fn patch_comment(
+    State(pool): State<Pool>,
+    InputPath(comment_id): InputPath<Uuid>,
+    InputJson(new_comment): InputJson<PatchComment>,
+) -> Result<impl IntoResponse, AppError> {
+    new_comment.validate()?;
+    let result = database::controller::update_comment(pool, comment_id, new_comment).await?;
+    Ok((StatusCode::OK, Json(result)))
+}
+
+async fn delete_comment(
+    State(pool): State<Pool>,
+    InputPath((_, comment_id)): InputPath<(Uuid, Uuid)>,
+) -> Result<impl IntoResponse, AppError> {
+    let result = database::controller::delete_comment(pool, comment_id).await?;
     Ok((StatusCode::OK, Json(result)))
 }
 

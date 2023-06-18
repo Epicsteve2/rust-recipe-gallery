@@ -1,4 +1,5 @@
 use crate::errors::AppError;
+use crate::models::{Comment, PatchComment};
 use crate::Recipe;
 use crate::{PatchRecipe, Pool};
 
@@ -70,6 +71,59 @@ pub async fn delete_recipe(pool: Pool, recipe_id: Uuid) -> Result<Recipe, AppErr
 
     let result = diesel::delete(recipes::table.find(recipe_id))
         .returning(Recipe::as_returning())
+        .get_result(conn)
+        .await?;
+    Ok(result)
+}
+
+pub async fn create_comment(pool: Pool, comment: Comment) -> Result<Comment, AppError> {
+    let mut conn = pool.get().await?;
+    use super::schema::comments;
+
+    let result = diesel::insert_into(comments::table)
+        .values(comment)
+        .returning(Comment::as_returning())
+        .get_result(&mut conn)
+        .await?;
+
+    Ok(result)
+}
+
+pub async fn read_all_comments(pool: Pool) -> Result<Vec<Comment>, AppError> {
+    let mut conn = &mut pool.get().await?;
+    use crate::database::schema::comments::dsl::*;
+    // use crate::database::schema::recipes::dsl::recipes;
+
+    let result = comments
+        .select(Comment::as_select())
+        .load(&mut conn)
+        .await?;
+
+    Ok(result)
+}
+
+pub async fn update_comment(
+    pool: Pool,
+    comment_id: Uuid,
+    new_comment: PatchComment,
+) -> Result<Comment, AppError> {
+    let conn = &mut pool.get().await?;
+    use crate::database::schema::comments;
+
+    let result = diesel::update(comments::table.find(comment_id))
+        .set(&new_comment)
+        .returning(Comment::as_returning())
+        .get_result(conn)
+        .await?;
+    Ok(result)
+}
+
+pub async fn delete_comment(pool: Pool, comment_id: Uuid) -> Result<Comment, AppError> {
+    let conn = &mut pool.get().await?;
+    use crate::database::schema::comments;
+
+    let result = diesel::delete(comments::table.find(comment_id))
+        .returning(Comment::as_returning())
         .get_result(conn)
         .await?;
     Ok(result)

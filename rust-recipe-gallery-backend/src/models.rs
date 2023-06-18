@@ -1,5 +1,5 @@
 use diesel::prelude::*;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use uuid::Uuid;
 use validator::Validate;
 
@@ -30,7 +30,8 @@ pub struct PostComment {
     pub comment: String,
 }
 
-#[derive(Debug, Deserialize, Validate)]
+#[derive(Debug, Deserialize, Validate, AsChangeset)]
+#[diesel(table_name = crate::database::schema::comments)]
 pub struct PatchComment {
     pub id: Uuid,
     #[validate(length(min = 1, message = "must have a body"))]
