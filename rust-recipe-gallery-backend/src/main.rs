@@ -1,47 +1,27 @@
-mod custom_json_extractor;
-mod custom_path_extractor;
 mod database;
 mod errors;
+mod middleware;
 mod models;
-mod print_body_middleware;
 
-use crate::errors::AppError;
-use crate::models::Recipe;
+use crate::models::{PatchRecipe, PostRecipe, Recipe};
+use crate::{errors::AppError, middleware::print_body_middleware};
 
 use axum::{
     extract::State,
     http::StatusCode,
-    middleware,
+    middleware as auxm_middleware,
     response::IntoResponse,
     routing::{get, post},
     Json, Router,
 };
-use custom_json_extractor::InputJson;
-use custom_path_extractor::InputPath;
 use diesel_async::{pooled_connection::AsyncDieselConnectionManager, AsyncPgConnection};
-use serde::Deserialize;
+use middleware::{custom_json_extractor::InputJson, custom_path_extractor::InputPath};
 use serde_json::{json, Value};
 use std::{env, net::SocketAddr};
 use tower_http::trace::TraceLayer;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 use uuid::Uuid;
 use validator::Validate;
-
-#[derive(Debug, Deserialize, Validate)]
-struct PostRecipe {
-    #[validate(length(min = 2, message = "must be at least 2 characters"))]
-    title: String,
-    // // TODO: Validate every ingreident to have at least 2 characters as well.
-    // #[validate(length(min = 1, message = "must have at least 1 ingredient"))]
-    // ingredients: Vec<String>,
-}
-
-#[derive(Debug, Deserialize, Validate)]
-pub struct PatchRecipe {
-    // #[validate(required)]
-    // TODO: validate
-    title: Option<String>,
-}
 
 pub type Pool = bb8::Pool<AsyncDieselConnectionManager<AsyncPgConnection>>;
 
@@ -72,9 +52,9 @@ async fn main() -> Result<(), anyhow::Error> {
         .route("/api/recipe", get(get_all_recipe))
         .route(
             "/api/recipe/:recipe_id",
-            get(get_recipe).patch(patch_recipe),
+            get(get_recipe).patch(patch_recipe).delete(delete_recipe),
         )
-        .layer(middleware::from_fn(print_body_middleware::print_body))
+        .layer(auxm_middleware::from_fn(print_body_middleware::print_body))
         .layer(
             TraceLayer::new_for_http()
                 .make_span_with(
@@ -133,6 +113,14 @@ async fn patch_recipe(
     InputJson(payload): InputJson<PatchRecipe>,
 ) -> Result<impl IntoResponse, AppError> {
     let result = database::controller::update_recipe(pool, recipe_id, payload).await?;
+    Ok((StatusCode::OK, Json(result)))
+}
+
+async fn delete_recipe(
+    State(pool): State<Pool>,
+    InputPath(recipe_id): InputPath<Uuid>,
+) -> Result<impl IntoResponse, AppError> {
+    let result = database::controller::delete_recipe(pool, recipe_id).await?;
     Ok((StatusCode::OK, Json(result)))
 }
 

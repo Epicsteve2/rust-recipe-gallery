@@ -34,8 +34,12 @@ impl IntoResponse for AppError {
                 to_response(StatusCode::UNPROCESSABLE_ENTITY, &self.to_string())
             }
             AppError::DatabaseError(err) => match err {
-                // i wish this could be better... somehow, embed what wasn't found
+                // TODO: i wish this could be better... somehow, embed what wasn't found
                 NotFound => to_response(StatusCode::NOT_FOUND, &err.to_string()),
+                // TODO: same
+                diesel::result::Error::QueryBuilderError(_) => {
+                    to_response(StatusCode::OK, &self.to_string())
+                }
                 _ => to_response(StatusCode::INTERNAL_SERVER_ERROR, &self.to_string()),
             },
             AppError::OtherError { .. } => {

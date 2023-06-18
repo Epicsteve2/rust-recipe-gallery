@@ -1,6 +1,7 @@
 use crate::errors::AppError;
+use crate::Recipe;
 use crate::{PatchRecipe, Pool};
-// use anyhow::Error;
+
 use axum::async_trait;
 use axum::extract::{FromRef, FromRequestParts};
 use axum::http::request::Parts;
@@ -9,8 +10,6 @@ use diesel_async::{
     pooled_connection::AsyncDieselConnectionManager, AsyncPgConnection, RunQueryDsl,
 };
 use uuid::Uuid;
-
-use crate::Recipe;
 
 pub async fn create_recipe(pool: Pool, recipe: Recipe) -> Result<Recipe, AppError> {
     let mut conn = pool.get().await?;
@@ -57,24 +56,23 @@ pub async fn update_recipe(
     let conn = &mut pool.get().await?;
     use crate::database::schema::recipes;
 
-    let old_recipe = recipes::table
-        .filter(recipes::id.eq(recipe_id))
-        .first::<Recipe>(conn)
+    let result = diesel::update(recipes::table.find(recipe_id))
+        .set(&new_recipe)
+        .returning(Recipe::as_returning())
+        .get_result(conn)
         .await?;
+    Ok(result)
+}
 
-    let result = diesel::update(recipes::table.find(recipe_id));
+pub async fn delete_recipe(pool: Pool, recipe_id: Uuid) -> Result<Recipe, AppError> {
+    let conn = &mut pool.get().await?;
+    use crate::database::schema::recipes;
 
-    // possible way to make this into a loop? if there's multiple places to update
-    if let Some(new_title) = new_recipe.title {
-        let result = result
-            .set(recipes::title.eq(new_title))
-            .returning(Recipe::as_returning())
-            .get_result(conn)
-            .await?;
-        Ok(result)
-    } else {
-        Ok(old_recipe)
-    }
+    let result = diesel::delete(recipes::table.find(recipe_id))
+        .returning(Recipe::as_returning())
+        .get_result(conn)
+        .await?;
+    Ok(result)
 }
 
 // we can also write a custom extractor that grabs a connection from the pool
