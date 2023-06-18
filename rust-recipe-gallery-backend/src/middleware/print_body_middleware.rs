@@ -43,7 +43,6 @@ where
             body: err.to_string(),
         })?;
 
-    // TODO: possible pretty print?
     if let Ok(body) = std::str::from_utf8(&bytes) {
         tracing::info!("{} body = {:?}", direction, body);
     }

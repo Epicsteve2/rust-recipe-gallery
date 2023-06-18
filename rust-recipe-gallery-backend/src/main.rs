@@ -32,7 +32,7 @@ async fn main() -> Result<(), anyhow::Error> {
     tracing_subscriber::registry()
         .with(
             tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| {
-                "rust_recipe_gallery_backend=info,tower_http::trace=info".into()
+                "rust_recipe_gallery_backend=debug,tower_http::trace=info,info".into()
             }),
         )
         .with(tracing_subscriber::fmt::layer().pretty())
@@ -88,6 +88,8 @@ async fn post_recipe(
     let recipe = Recipe {
         id: Uuid::new_v4(),
         title: payload.title,
+        ingredients: payload.ingredients,
+        body: payload.body,
         // ingredients: payload.ingredients,
     };
     let result = database::controller::create_recipe(pool, recipe).await?;
@@ -112,6 +114,7 @@ async fn patch_recipe(
     InputPath(recipe_id): InputPath<Uuid>,
     InputJson(payload): InputJson<PatchRecipe>,
 ) -> Result<impl IntoResponse, AppError> {
+    payload.validate()?;
     let result = database::controller::update_recipe(pool, recipe_id, payload).await?;
     Ok((StatusCode::OK, Json(result)))
 }

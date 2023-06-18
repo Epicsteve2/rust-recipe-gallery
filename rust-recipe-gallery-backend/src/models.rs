@@ -1,5 +1,5 @@
 use diesel::prelude::*;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use validator::Validate;
 
@@ -9,23 +9,52 @@ use validator::Validate;
 pub struct Recipe {
     pub id: Uuid,
     pub title: String,
-    // // this is dumb. might need another table for ingredients??? Doesn't seem possible to be double not null...
-    // pub ingredients: Vec<Option<String>>,
+    pub ingredients: String,
+    pub body: String,
+}
+
+#[derive(Debug, serde::Serialize, Queryable, Selectable, Insertable, Associations)]
+#[diesel(belongs_to(Recipe))]
+#[diesel(table_name = crate::database::schema::comments)]
+#[diesel(check_for_backend(diesel::pg::Pg))]
+pub struct Comment {
+    pub id: Uuid,
+    pub recipe_id: Uuid,
+    pub comment: String,
+}
+
+#[derive(Debug, Deserialize, Validate)]
+pub struct PostComment {
+    pub recipe_id: Uuid,
+    #[validate(length(min = 1, message = "must have a body"))]
+    pub comment: String,
+}
+
+#[derive(Debug, Deserialize, Validate)]
+pub struct PatchComment {
+    pub id: Uuid,
+    #[validate(length(min = 1, message = "must have a body"))]
+    pub comment: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Validate, AsChangeset)]
 #[diesel(table_name = crate::database::schema::recipes)]
 pub struct PatchRecipe {
-    // #[validate(required)]
-    // TODO: validate
+    #[validate(length(min = 2, message = "must be at least 2 characters"))]
     pub title: Option<String>,
+    #[validate(length(min = 2, message = "must have at least 1 ingredient"))]
+    pub ingredients: Option<String>,
+    #[validate(length(min = 1, message = "must have a body"))]
+    pub body: Option<String>,
 }
 
+// mayube both should be same thing??
 #[derive(Debug, Deserialize, Validate)]
 pub struct PostRecipe {
     #[validate(length(min = 2, message = "must be at least 2 characters"))]
     pub title: String,
-    // // TODO: Validate every ingreident to have at least 2 characters as well.
-    // #[validate(length(min = 1, message = "must have at least 1 ingredient"))]
-    // ingredients: Vec<String>,
+    #[validate(length(min = 2, message = "must have at least 1 ingredient"))]
+    pub ingredients: String,
+    #[validate(length(min = 2, message = "must have a body"))]
+    pub body: String,
 }

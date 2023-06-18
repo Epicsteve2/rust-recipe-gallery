@@ -8,7 +8,7 @@ FROM mcr.microsoft.com/devcontainers/rust:0-1-bullseye
 
 USER vscode
 RUN cargo install diesel_cli
-RUN rustup toolchain install nightly --allow-downgrade --component rustfmt --component clippy && \
+RUN rustup toolchain install nightly-2023-06-18 --allow-downgrade --component rustfmt --component clippy && \
     rustup target add wasm32-unknown-unknown
 
 # Include lld linker to improve build times either by using environment variable

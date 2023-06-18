@@ -34,7 +34,6 @@ services:
       PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: 'False'
       PGADMIN_DEFAULT_EMAIL: admin@admin.com
       PGADMIN_DEFAULT_PASSWORD: root
-      # TODO: Maybe use 2 networks?
     networks:
       - rust_recipe_gallery
     depends_on:
