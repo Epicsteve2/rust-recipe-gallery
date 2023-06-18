@@ -1,0 +1,3 @@
+[serve]
+# I don't wanna rebuild this container so here we go
+port = 7979

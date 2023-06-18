@@ -81,8 +81,8 @@ async fn main() -> Result<(), anyhow::Error> {
         .with_state(pool)
         .fallback(|| async { to_response(StatusCode::NOT_FOUND, "endpoint does not exist") });
 
-    let addr = SocketAddr::from(([0, 0, 0, 0], port));
-    tracing::info!("listening on {addr}");
+    let addr = SocketAddr::from(([127, 0, 0, 1], port));
+    tracing::info!("listening on http://{addr}");
     axum::Server::bind(&addr)
         .serve(app.into_make_service())
         .await?;
