@@ -44,7 +44,7 @@ async fn main() -> Result<(), anyhow::Error> {
         .map(|port_string| port_string.parse::<u16>().unwrap())
         .unwrap_or(7979);
     let database_url = env::var("DATABASE_URL")
-        .unwrap_or("postgres://rust-recipe-gallery:123456@db/recipe-gallery".to_string());
+        .unwrap_or("postgres://postgres:123456@db/recipe-gallery".to_string());
 
     let config = AsyncDieselConnectionManager::<diesel_async::AsyncPgConnection>::new(database_url);
     let pool = bb8::Pool::builder().build(config).await?;
@@ -100,7 +100,6 @@ async fn post_recipe(
         title: payload.title,
         ingredients: payload.ingredients,
         body: payload.body,
-        // ingredients: payload.ingredients,
     };
     let result = database::controller::create_recipe(pool, recipe).await?;
     Ok((StatusCode::CREATED, Json(result)))
@@ -146,7 +145,6 @@ async fn post_comment(
         id: Uuid::new_v4(),
         recipe_id: payload.recipe_id,
         comment: payload.comment,
-        // ingredients: payload.ingredients,
     };
     let result = database::controller::create_comment(pool, comment).await?;
     Ok((StatusCode::CREATED, Json(result)))
@@ -156,11 +154,9 @@ async fn get_comments(State(pool): State<Pool>) -> Result<impl IntoResponse, App
     let result = database::controller::read_all_comments(pool).await?;
     Ok((
         StatusCode::CREATED,
-        Json(json!(
-            {
-                "results": result
-            }
-        )),
+        Json(json!({
+            "results": result
+        })),
     ))
 }
 

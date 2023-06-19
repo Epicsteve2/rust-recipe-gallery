@@ -58,6 +58,8 @@ services:
       - .env
 
   pgweb:
+    profiles:
+      - donotstart
     container_name: rust-recipe-gallery-pgweb
     restart: unless-stopped
     image: sosedoff/pgweb:0.14.1

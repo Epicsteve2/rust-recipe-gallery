@@ -49,7 +49,6 @@ pub struct PatchRecipe {
     pub body: Option<String>,
 }
 
-// mayube both should be same thing??
 #[derive(Debug, Deserialize, Validate)]
 pub struct PostRecipe {
     #[validate(length(min = 2, message = "must be at least 2 characters"))]

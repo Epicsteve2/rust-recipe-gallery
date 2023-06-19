@@ -136,8 +136,6 @@ struct DatabaseConnection(
 );
 
 // I'm guessing this is for await
-// also, move to errors?
-// this is an extractor, so errors becomes responses. Can't return an anyhow error I think
 #[async_trait]
 impl<S> FromRequestParts<S> for DatabaseConnection
 where
