@@ -4,7 +4,9 @@ psql --username=rust-recipe-gallery --dbname=recipe-gallery
 
 diesel migration redo
 
-tailwindcss --input ./input.css --output ./style/tailwind.css --watch
+# Frontend
+tailwindcss --input ./input.css --output ./style/output.css --watch
+cargo leptos watch
 ```
 
 ```sql
