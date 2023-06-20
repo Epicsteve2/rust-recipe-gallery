@@ -54,6 +54,14 @@ tailwind-input-file = "input.css"
 bin-features = ["ssr"]
 lib-features = ["hydrate"]
 assets-dir = "public"
-# end2end-cmd = "/home/vscode/.nvm/versions/node/v18.16.0/bin/playwright test"
+
+# doesn't work because needs this file
+# Error: running: npx playwright test at `/usr/local/cargo/registry/src/github.com-1ecc6299db9ec823/cargo-leptos-0.1.11/src/command/end2end.rs:28:14`
+
+# Caused by:
+#     0: Could not spawn command "npx playwright test" at `/usr/local/cargo/registry/src/github.com-1ecc6299db9ec823/cargo-leptos-0.1.11/src/command/end2end.rs:50:10`
+#     1: No such file or directory (os error 2)
+# and I don't bother copying it to make the image smaller. maybe I shouldn't care tho...
+# just run npx playwright test manually lol
 end2end-cmd = "npx playwright test"
 end2end-dir = "end2end"
