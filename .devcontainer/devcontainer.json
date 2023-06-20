@@ -19,7 +19,6 @@
   // Use 'forwardPorts' to make a list of ports inside the container available locally.
   "forwardPorts": [
     7979,
-    8080,
     3000,
     3001 // somehow port 9323 isn't needed???
   ],
