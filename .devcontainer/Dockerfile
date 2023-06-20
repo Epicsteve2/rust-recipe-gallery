@@ -6,11 +6,13 @@ FROM mcr.microsoft.com/devcontainers/rust:0-1-bullseye as builder
 #     && apt-get clean \
 #     && rm -rf /var/lib/apt/lists/*
 
+# ENV NODE_VERSION="${VERSION:-"lts/hydrogen"}"
+# ENV NVM_VERSION="${NVMVERSION:-"0.39.2"}"
+# ENV NVM_DIR=${NVMINSTALLPATH:-"/usr/local/share/nvm"}
+
 RUN cargo install diesel_cli --version 2.1.0 && \
     cargo install trunk --version 0.16.0 && \
     cargo install cargo-leptos --version 0.1.11
-
-# Also might need npm... for Tailwind
 
 FROM mcr.microsoft.com/devcontainers/rust:0-1-bullseye
 COPY --from=builder /usr/local/cargo/bin/diesel /usr/local/cargo/bin/cargo-leptos /usr/local/cargo/bin/trunk /usr/local/cargo/bin/
@@ -21,6 +23,14 @@ USER vscode
 RUN rustup toolchain install nightly-2023-06-18 --allow-downgrade --component rustfmt --component clippy && \
     rustup target add --toolchain nightly-2023-06-18 wasm32-unknown-unknown && \
     rustup default nightly-2023-06-18
+
+SHELL ["/bin/bash", "--login", "-c"]
+RUN curl -so- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash && \
+    source /home/vscode/.nvm/nvm.sh && \
+    nvm install lts/hydrogen && \
+    npm install --global tailwindcss@3.3.2 sass@1.63.4 && \
+    rm -rf /home/vscode/.nvm/.cache/* && \
+    npm cache clean --force
 
 # Include lld linker to improve build times either by using environment variable
 # RUSTFLAGS="-C link-arg=-fuse-ld=lld" or with Cargo's configuration file (i.e see .cargo/config.toml).
