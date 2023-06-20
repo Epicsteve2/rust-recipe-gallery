@@ -21,7 +21,7 @@
     7979,
     8080,
     3000,
-    3001
+    3001 // somehow port 9323 isn't needed???
   ],
   // Uncomment the next line if you want start specific services in your Docker Compose config.
   "runServices": [
@@ -36,6 +36,8 @@
     "vscode": {
       // Set *default* container specific settings.json values on container create.
       "settings": {
+        "rust-analyzer.cargo.features": "all",
+        "rust-analyzer.check.features": "all",
         "editor.formatOnSave": true,
         "emmet.includeLanguages": {
           "rust": "html",
