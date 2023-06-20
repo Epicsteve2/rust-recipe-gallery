@@ -2,7 +2,7 @@ FROM mcr.microsoft.com/devcontainers/rust:0-1-bullseye as builder
 
 # I don't think I need. Just bash into the postgres image
 # RUN apt-get update \
-#     && apt-get -y --no-install-recommends install postgresql \
+#     && apt-get --yes --no-install-recommends install postgresql \
 #     && apt-get clean \
 #     && rm -rf /var/lib/apt/lists/*
 
@@ -24,7 +24,7 @@ COPY --from=builder /usr/local/cargo/bin/diesel /usr/local/cargo/bin/cargo-lepto
 # playwright dependenecies
 RUN export DEBIAN_FRONTEND=noninteractive && \
     apt-get update && \
-    apt-get install --no-install-recommends -y \
+    apt-get install --no-install-recommends --yes \
     libasound2 \
     libatk-bridge2.0-0 \
     libatspi2.0-0 \
@@ -119,7 +119,7 @@ RUN rustup toolchain install nightly-2023-06-18 --allow-downgrade --component ru
     rustup default nightly-2023-06-18
 
 SHELL ["/bin/bash", "--login", "-c"]
-RUN curl -so- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash && \
+RUN curl --silent --output - https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash && \
     source /home/vscode/.nvm/nvm.sh && \
     nvm install lts/hydrogen && \
     npm install --global tailwindcss@3.3.2 sass@1.63.4 @playwright/test@1.35.1 && \

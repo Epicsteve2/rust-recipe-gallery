@@ -1,4 +1,4 @@
 [workspace]
 
-members = ["rust-recipe-gallery-frontend", "rust-recipe-gallery-backend"]
+members = ["frontend", "backend"]
 resolver = "2"

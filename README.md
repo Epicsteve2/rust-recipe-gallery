@@ -9,10 +9,7 @@ tailwindcss --input ./input.css --output ./style/tailwind.css --watch
 cargo leptos watch
 cd end2end
 npm install
-npx playwright install
-# npx playwright install-deps
-cd ..
-cargo leptos end-to-end
+npx playwright test
 ```
 
 ```sql
