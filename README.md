@@ -1,6 +1,6 @@
 ```bash
 docker exec --interactive --tty rust-recipe-gallery-postgres bash
-psql --username=rust-recipe-gallery --dbname=recipe-gallery
+psql --username=postgres --dbname=recipe-gallery
 
 diesel migration redo
 diesel migration run

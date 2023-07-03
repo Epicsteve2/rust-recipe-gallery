@@ -8,7 +8,7 @@ pub fn App(cx: Scope) -> impl IntoView {
 
     view! {
         cx,
-        <Stylesheet id="leptos" href="/pkg/rust-recipe-gallery-frontend.css"/>
+        <Stylesheet id="leptos" href="/pkg/tailwind.css"/>
         <Link rel="shortcut icon" type_="image/ico" href="/favicon.ico"/>
         <Router>
             <Routes>
@@ -24,7 +24,7 @@ fn Home(cx: Scope) -> impl IntoView {
 
     // thanks to https://tailwindcomponents.com/component/blue-buttons-example for the showcase layout
     view! { cx,
-        <Title text="Rust Recipe Gallery"/>
+        <Title text="Leptos + Tailwindcss"/>
         <main>
             <div class="bg-gradient-to-tl from-blue-800 to-blue-500 text-white font-mono flex flex-col min-h-screen">
                 <div class="flex flex-row-reverse flex-wrap m-auto">
@@ -42,3 +42,16 @@ fn Home(cx: Scope) -> impl IntoView {
         </main>
     }
 }
+
+// #[component]
+// pub fn TopNavBar(cx: Scope) -> impl IntoView {
+//     view! { cx,
+//         // <nav class="bg-green-600 flex flex-col h-6 p-6 py-8 text-center text-xl text-white font-medium">
+//         <nav class="bg-green-600 text-white">
+//             <div class="max-w-screen-xl flex flex-wrap items-center justify-between mx-auto p-6">
+//                 <div>"joe"</div>
+//                 <div>"mamma!!"</div>
+//             </div>
+//         </nav>
+//     }
+// }

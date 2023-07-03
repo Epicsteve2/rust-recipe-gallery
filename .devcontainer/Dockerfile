@@ -11,15 +11,13 @@ FROM mcr.microsoft.com/devcontainers/rust:0-1-bullseye as builder
 # ENV NVM_DIR=${NVMINSTALLPATH:-"/usr/local/share/nvm"}
 
 RUN cargo install diesel_cli --version 2.1.0 && \
-    cargo install cargo-leptos --version 0.1.11
-
-# cargo install trunk --version 0.16.0 && \
-# /usr/local/cargo/bin/trunk
+    cargo install cargo-leptos --version 0.1.11 && \
+    cargo install trunk --version 0.16.0
 # cargo install cargo-generate --version 0.18.3
 # /usr/local/cargo/bin/cargo-generate
 
 FROM mcr.microsoft.com/devcontainers/rust:0-1-bullseye
-COPY --from=builder /usr/local/cargo/bin/diesel /usr/local/cargo/bin/cargo-leptos /usr/local/cargo/bin/
+COPY --from=builder /usr/local/cargo/bin/diesel /usr/local/cargo/bin/cargo-leptos /usr/local/cargo/bin/trunk /usr/local/cargo/bin/
 
 # playwright dependenecies
 RUN export DEBIAN_FRONTEND=noninteractive && \
@@ -114,9 +112,9 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
 USER vscode
 # --allow-downgarde is if rustfmt or clippy isn't available for that version of nightly
 # possible to use multi-stage??? nah doubt it'll work
-RUN rustup toolchain install nightly-2023-06-18 --allow-downgrade --component rustfmt --component clippy && \
-    rustup target add --toolchain nightly-2023-06-18 wasm32-unknown-unknown && \
-    rustup default nightly-2023-06-18
+RUN rustup toolchain install nightly-2023-07-03 --allow-downgrade --component rustfmt --component clippy && \
+    rustup target add --toolchain nightly-2023-07-03 wasm32-unknown-unknown && \
+    rustup default nightly-2023-07-03
 
 SHELL ["/bin/bash", "--login", "-c"]
 RUN curl --silent --output - https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash && \

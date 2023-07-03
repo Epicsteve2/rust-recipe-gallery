@@ -1,5 +1,5 @@
 [toolchain]
 # I always tend to get errors in the devcontainer when changing versions, so I'm pinning
-channel = "nightly-2023-06-18"
+channel = "nightly-2023-07-03"
 components = ["rustfmt", "clippy"]
 targets = ["wasm32-unknown-unknown"]
