@@ -54,7 +54,8 @@
           "comments": "on",
           "strings": true
         },
-        "css.validate": false
+        "css.validate": false,
+        // "files.autoSave": "off"
       },
       "extensions": [
         "ms-azuretools.vscode-docker",

@@ -31,6 +31,7 @@ http = "0.2.9"
 
 [features]
 hydrate = ["leptos/hydrate", "leptos_meta/hydrate", "leptos_router/hydrate"]
+# csr = ["leptos/csr", "leptos_meta/csr", "leptos_router/csr"]
 ssr = [
     "dep:axum",
     "dep:tokio",
@@ -46,6 +47,7 @@ ssr = [
 [package.metadata.cargo-all-features]
 denylist = ["axum", "tokio", "tower", "tower-http", "leptos_axum"]
 skip_feature_sets = [["ssr", "hydrate"]]
+# skip_feature_sets = [["ssr", "hydrate"], ["ssr", "csr"]]
 
 [package.metadata.leptos]
 style-file = "style/tailwind.css"

@@ -8,7 +8,10 @@ diesel database reset
 
 # Frontend
 tailwindcss --input ./input.css --output ./style/tailwind.css --watch
-cargo leptos watch
+cargo leptos watch --hot-reload
+
+trunk -v serve --features hydrate
+
 cd end2end
 npm install
 npx playwright test

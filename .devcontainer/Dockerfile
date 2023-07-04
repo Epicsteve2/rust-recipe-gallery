@@ -1,4 +1,10 @@
-FROM mcr.microsoft.com/devcontainers/rust:0-1-bullseye as builder
+# a lot of stages b/c of compile times...
+FROM mcr.microsoft.com/devcontainers/rust:0-1-bullseye as diesel
+RUN cargo install diesel_cli --version 2.1.0
+FROM mcr.microsoft.com/devcontainers/rust:0-1-bullseye as leptos
+RUN cargo install cargo-leptos --version 0.1.11
+FROM mcr.microsoft.com/devcontainers/rust:0-1-bullseye as trunk
+RUN cargo install trunk --version 0.17.1
 
 # I don't think I need. Just bash into the postgres image
 # RUN apt-get update \
@@ -10,14 +16,13 @@ FROM mcr.microsoft.com/devcontainers/rust:0-1-bullseye as builder
 # ENV NVM_VERSION="${NVMVERSION:-"0.39.2"}"
 # ENV NVM_DIR=${NVMINSTALLPATH:-"/usr/local/share/nvm"}
 
-RUN cargo install diesel_cli --version 2.1.0 && \
-    cargo install cargo-leptos --version 0.1.11 && \
-    cargo install trunk --version 0.16.0
 # cargo install cargo-generate --version 0.18.3
 # /usr/local/cargo/bin/cargo-generate
 
 FROM mcr.microsoft.com/devcontainers/rust:0-1-bullseye
-COPY --from=builder /usr/local/cargo/bin/diesel /usr/local/cargo/bin/cargo-leptos /usr/local/cargo/bin/trunk /usr/local/cargo/bin/
+COPY --from=diesel /usr/local/cargo/bin/diesel /usr/local/cargo/bin/
+COPY --from=leptos /usr/local/cargo/bin/cargo-leptos /usr/local/cargo/bin/
+COPY --from=trunk /usr/local/cargo/bin/trunk /usr/local/cargo/bin/
 
 # playwright dependenecies
 RUN export DEBIAN_FRONTEND=noninteractive && \
@@ -125,8 +130,6 @@ RUN curl --silent --output - https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.
     playwright install && \
     npm uninstall --global @playwright/test && \
     npm cache clean --force
-
-#  @playwright/test@1.35.1
 
 # nah i got the command above
 # echo 'debconf debconf/frontend select Noninteractive' | sudo debconf-set-selections && \

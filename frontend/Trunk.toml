@@ -1,0 +1,13 @@
+[serve]
+address = "0.0.0.0"
+port = 3000
+
+[[hooks]]
+stage = "pre_build"
+command = "tailwindcss"
+command_arguments = [
+    "--input",
+    "./input.css",
+    "--output",
+    "./style/tailwind.css",
+]

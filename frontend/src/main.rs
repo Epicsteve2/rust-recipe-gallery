@@ -41,4 +41,5 @@ pub fn main() {
     // no client-side main function
     // unless we want this to work with e.g., Trunk for a purely client-side app
     // see lib.rs for hydration function instead
+    rust_recipe_gallery_frontend::hydrate();
 }
