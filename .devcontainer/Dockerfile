@@ -125,8 +125,8 @@ SHELL ["/bin/bash", "--login", "-c"]
 RUN curl --silent --output - https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash && \
     source /home/vscode/.nvm/nvm.sh && \
     nvm install lts/hydrogen && \
-    npm install --global tailwindcss@3.3.2 sass@1.63.4 @playwright/test@1.35.1 && \
     rm -rf /home/vscode/.nvm/.cache/* && \
+    npm install --global tailwindcss@3.3.2 sass@1.63.4 @playwright/test@1.35.1 && \
     playwright install && \
     npm uninstall --global @playwright/test && \
     npm cache clean --force

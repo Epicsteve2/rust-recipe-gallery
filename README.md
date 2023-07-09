@@ -7,6 +7,7 @@ diesel migration run
 diesel database reset
 
 # Frontend
+cd frontend/
 tailwindcss --input ./input.css --output ./style/tailwind.css --watch
 cargo leptos watch --hot-reload
 
