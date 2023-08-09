@@ -1,10 +1,13 @@
 # a lot of stages b/c of compile times...
-FROM mcr.microsoft.com/devcontainers/rust:0-1-bullseye as diesel
+FROM mcr.microsoft.com/devcontainers/rust:1-1-bullseye as diesel
 RUN cargo install diesel_cli --version 2.1.0
-FROM mcr.microsoft.com/devcontainers/rust:0-1-bullseye as leptos
+FROM mcr.microsoft.com/devcontainers/rust:1-1-bullseye as leptos
 RUN cargo install cargo-leptos --version 0.1.11
-FROM mcr.microsoft.com/devcontainers/rust:0-1-bullseye as trunk
-RUN cargo install trunk --version 0.17.1
+FROM mcr.microsoft.com/devcontainers/rust:1-1-bullseye as trunk
+RUN cargo install trunk --version 0.17.3
+
+# RUN cargo install wasm-pack --version 0.12.1 # nah
+# RUN cargo install cargo-generate --version 0.18.3 # prolly not needed at all
 
 # I don't think I need. Just bash into the postgres image
 # RUN apt-get update \
@@ -19,117 +22,147 @@ RUN cargo install trunk --version 0.17.1
 # cargo install cargo-generate --version 0.18.3
 # /usr/local/cargo/bin/cargo-generate
 
-FROM mcr.microsoft.com/devcontainers/rust:0-1-bullseye
+FROM mcr.microsoft.com/devcontainers/rust:1-1-bullseye as node
+
+# TODO do this? https://stackoverflow.com/a/66390227 https://github.com/nodejs/help/wiki/Installation
+# nvm nah
+# ARG NODE_VERSION=18.17.0
+# ARG NODE_PACKAGE=node-v$NODE_VERSION-linux-x64
+# ARG NODE_HOME=/usr/lib/$NODE_PACKAGE
+# ADD https://nodejs.org/dist/v$NODE_VERSION/$NODE_PACKAGE.tar.gz /
+# RUN tar -xzf $NODE_PACKAGE --directory=/usr/local/lib/
+# # --extract --gzip
+
+# ENV NODE_PATH $NODE_HOME/lib/node_modules
+# ENV PATH $NODE_HOME/bin:$PATH
+USER vscode
+SHELL ["/bin/bash", "--login", "-c"]
+RUN curl --silent --output - https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.4/install.sh | bash && \
+  source /home/vscode/.nvm/nvm.sh && \
+  nvm install 18.17.1 && \
+  rm -rf /home/vscode/.nvm/.cache/*
+
+RUN source /home/vscode/.nvm/nvm.sh && \
+  npm install --global @playwright/test@1.36.2 && \
+  playwright install && \
+  npm uninstall --global @playwright/test && \
+  npm cache clean --force
+
+RUN source /home/vscode/.nvm/nvm.sh && \
+  npm install --global tailwindcss@3.3.3 sass@1.64.2 && \
+  npm cache clean --force
+
+# FROM mcr.microsoft.com/devcontainers/rust:1-1-bullseye as rust-nightly
+# RUN rustup toolchain install nightly-2023-08-08 --allow-downgrade --component rustfmt --component clippy && \
+#   rustup target add --toolchain nightly-2023-08-08 wasm32-unknown-unknown && \
+#   rustup default nightly-2023-08-08
+
+FROM mcr.microsoft.com/devcontainers/rust:1-1-bullseye
+# playwright dependenecies
+# doesn't work for debian 12 aka bookworm
+# to get dependencies, run `playwright install-deps --dry-run`
+RUN export DEBIAN_FRONTEND=noninteractive && \
+  apt-get update && \
+  apt-get install --no-install-recommends --yes \
+  libasound2 \
+  libatk-bridge2.0-0 \
+  libatk1.0-0 \
+  libatspi2.0-0 \
+  libcairo2 \
+  libcups2 \
+  libdbus-1-3 \
+  libdrm2 \
+  libgbm1 \
+  libglib2.0-0 \
+  libnspr4 \
+  libnss3 \
+  libpango-1.0-0 \
+  libwayland-client0 \
+  libx11-6 \
+  libxcb1 \
+  libxcomposite1 \
+  libxdamage1 \
+  libxext6 \
+  libxfixes3 \
+  libxkbcommon0 \
+  libxrandr2 \
+  xvfb \
+  fonts-noto-color-emoji \
+  fonts-unifont \
+  libfontconfig1 \
+  libfreetype6 \
+  xfonts-cyrillic \
+  xfonts-scalable \
+  fonts-liberation \
+  fonts-ipafont-gothic \
+  fonts-wqy-zenhei \
+  fonts-tlwg-loma-otf \
+  fonts-freefont-ttf \
+  libcairo-gobject2 \
+  libdbus-glib-1-2 \
+  libgdk-pixbuf-2.0-0 \
+  libgtk-3-0 \
+  libharfbuzz0b \
+  libpangocairo-1.0-0 \
+  libx11-xcb1 \
+  libxcb-shm0 \
+  libxcursor1 \
+  libxi6 \
+  libxrender1 \
+  libxtst6 \
+  gstreamer1.0-libav \
+  gstreamer1.0-plugins-bad \
+  gstreamer1.0-plugins-base \
+  gstreamer1.0-plugins-good \
+  libegl1 \
+  libenchant-2-2 \
+  libepoxy0 \
+  libevdev2 \
+  libgles2 \
+  libglx0 \
+  libgstreamer-gl1.0-0 \
+  libgstreamer-plugins-base1.0-0 \
+  libgstreamer1.0-0 \
+  libgudev-1.0-0 \
+  libharfbuzz-icu0 \
+  libhyphen0 \
+  libicu67 \
+  libjpeg62-turbo \
+  liblcms2-2 \
+  libmanette-0.2-0 \
+  libnotify4 \
+  libopengl0 \
+  libopenjp2-7 \
+  libopus0 \
+  libpng16-16 \
+  libproxy1v5 \
+  libsecret-1-0 \
+  libsoup2.4-1 \
+  libwayland-egl1 \
+  libwayland-server0 \
+  libwebp6 \
+  libwebpdemux2 \
+  libwoff1 \
+  libxml2 \
+  libxslt1.1 \
+  libatomic1 \
+  libevent-2.1-7 && \
+  apt-get clean && \
+  rm -rf /var/lib/apt/lists/*
+
+RUN rustup toolchain install nightly-2023-08-08 --allow-downgrade --component rustfmt --component clippy && \
+  rustup target add --toolchain nightly-2023-08-08 wasm32-unknown-unknown && \
+  rustup default nightly-2023-08-08
+
+USER vscode
+COPY --from=node /home/vscode/.cache /home/vscode/.cache/
+## this increased file size by like 600 mb... i really don't know why
+# COPY --from=rust-nightly /usr/local/rustup /usr/local/rustup
+COPY --from=node /home/vscode/.nvm /home/vscode/.nvm/
 COPY --from=diesel /usr/local/cargo/bin/diesel /usr/local/cargo/bin/
 COPY --from=leptos /usr/local/cargo/bin/cargo-leptos /usr/local/cargo/bin/
 COPY --from=trunk /usr/local/cargo/bin/trunk /usr/local/cargo/bin/
-
-# playwright dependenecies
-RUN export DEBIAN_FRONTEND=noninteractive && \
-    apt-get update && \
-    apt-get install --no-install-recommends --yes \
-    libasound2 \
-    libatk-bridge2.0-0 \
-    libatspi2.0-0 \
-    libatk1.0-0 \
-    libcairo-gobject2 \
-    libcairo2 \
-    libcups2 \
-    libdbus-1-3 \
-    libdbus-glib-1-2 \
-    libenchant-2-2 \
-    libfontconfig1 \
-    fonts-freefont-ttf \
-    fonts-ipafont-gothic \
-    fonts-liberation \
-    fonts-noto-color-emoji \
-    fonts-tlwg-loma-otf \
-    fonts-wqy-zenhei \
-    libfreetype6 \
-    libatomic1 \
-    libgdk-pixbuf-2.0-0 \
-    libglib2.0-0 \
-    gstreamer1.0-libav \
-    gstreamer1.0-plugins-bad \
-    gstreamer1.0-plugins-base \
-    libgstreamer-gl1.0-0 \
-    libgstreamer-plugins-base1.0-0 \
-    gstreamer1.0-plugins-good \
-    libgstreamer1.0-0 \
-    libgtk-3-0 \
-    libharfbuzz-icu0 \
-    libharfbuzz0b \
-    libhyphen0 \
-    libicu67 \
-    liblcms2-2 \
-    libdrm2 \
-    libepoxy0 \
-    libevdev2 \
-    libevent-2.1-7 \
-    libegl1 \
-    libgles2 \
-    libglx0 \
-    libopengl0 \
-    libgudev-1.0-0 \
-    libjpeg62-turbo \
-    libmanette-0.2-0 \
-    libnotify4 \
-    libpng16-16 \
-    libproxy1v5 \
-    libsecret-1-0 \
-    libsoup2.4-1 \
-    libx11-6 \
-    libx11-xcb1 \
-    libxcb-shm0 \
-    libxcb1 \
-    libxcomposite1 \
-    libxcursor1 \
-    libxdamage1 \
-    libxext6 \
-    libxfixes3 \
-    libxi6 \
-    libxkbcommon0 \
-    libxml2 \
-    libxrandr2 \
-    libxrender1 \
-    libxslt1.1 \
-    libxtst6 \
-    libgbm1 \
-    libnspr4 \
-    libnss3 \
-    libopenjp2-7 \
-    libopus0 \
-    libpango-1.0-0 \
-    libpangocairo-1.0-0 \
-    fonts-unifont \
-    libwayland-client0 \
-    libwayland-egl1 \
-    libwayland-server0 \
-    libwoff1 \
-    xfonts-cyrillic \
-    xfonts-scalable \
-    xvfb \
-    libwebp6 \
-    libwebpdemux2 && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
-
-USER vscode
-# --allow-downgarde is if rustfmt or clippy isn't available for that version of nightly
-# possible to use multi-stage??? nah doubt it'll work
-RUN rustup toolchain install nightly-2023-07-03 --allow-downgrade --component rustfmt --component clippy && \
-    rustup target add --toolchain nightly-2023-07-03 wasm32-unknown-unknown && \
-    rustup default nightly-2023-07-03
-
-SHELL ["/bin/bash", "--login", "-c"]
-RUN curl --silent --output - https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash && \
-    source /home/vscode/.nvm/nvm.sh && \
-    nvm install lts/hydrogen && \
-    rm -rf /home/vscode/.nvm/.cache/* && \
-    npm install --global tailwindcss@3.3.2 sass@1.63.4 @playwright/test@1.35.1 && \
-    playwright install && \
-    npm uninstall --global @playwright/test && \
-    npm cache clean --force
+COPY --from=node /home/vscode/.bashrc /home/vscode/
 
 # nah i got the command above
 # echo 'debconf debconf/frontend select Noninteractive' | sudo debconf-set-selections && \

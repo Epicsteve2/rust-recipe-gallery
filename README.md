@@ -10,6 +10,8 @@ diesel database reset
 cd frontend/
 tailwindcss --input ./input.css --output ./style/tailwind.css --watch
 cargo leptos watch --hot-reload
+# I think this is faster
+cargo leptos watch
 
 trunk -v serve --features hydrate
 
