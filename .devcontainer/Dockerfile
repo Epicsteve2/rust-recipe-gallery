@@ -150,19 +150,20 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
   apt-get clean && \
   rm -rf /var/lib/apt/lists/*
 
-RUN rustup toolchain install nightly-2023-08-08 --allow-downgrade --component rustfmt --component clippy && \
+
+USER vscode
+RUN rustup toolchain install nightly-2023-08-08 --allow-downgrade --component rustfmt --component clippy --component rust-src && \
   rustup target add --toolchain nightly-2023-08-08 wasm32-unknown-unknown && \
   rustup default nightly-2023-08-08
 
-USER vscode
-COPY --from=node /home/vscode/.cache /home/vscode/.cache/
+COPY --from=node --chown=vscode:vscode /home/vscode/.cache /home/vscode/.cache/
 ## this increased file size by like 600 mb... i really don't know why
 # COPY --from=rust-nightly /usr/local/rustup /usr/local/rustup
-COPY --from=node /home/vscode/.nvm /home/vscode/.nvm/
+COPY --from=node --chown=vscode:vscode /home/vscode/.nvm /home/vscode/.nvm/
 COPY --from=diesel /usr/local/cargo/bin/diesel /usr/local/cargo/bin/
 COPY --from=leptos /usr/local/cargo/bin/cargo-leptos /usr/local/cargo/bin/
 COPY --from=trunk /usr/local/cargo/bin/trunk /usr/local/cargo/bin/
-COPY --from=node /home/vscode/.bashrc /home/vscode/
+COPY --from=node --chown=vscode:vscode /home/vscode/.bashrc /home/vscode/
 
 # nah i got the command above
 # echo 'debconf debconf/frontend select Noninteractive' | sudo debconf-set-selections && \
