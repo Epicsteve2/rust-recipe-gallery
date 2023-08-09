@@ -1,6 +1,6 @@
 # a lot of stages b/c of compile times...
-# FROM mcr.microsoft.com/devcontainers/rust:1-1-bullseye as diesel
-# RUN cargo install diesel_cli --version 2.1.0
+FROM mcr.microsoft.com/devcontainers/rust:1-1-bullseye as diesel
+RUN cargo install diesel_cli --version 2.1.0
 # FROM mcr.microsoft.com/devcontainers/rust:1-1-bullseye as leptos
 # RUN cargo install cargo-leptos --version 0.1.11
 # FROM mcr.microsoft.com/devcontainers/rust:1-1-bullseye as trunk
@@ -9,9 +9,9 @@
 FROM mcr.microsoft.com/devcontainers/rust:1-1-bullseye as rust-dependencies
 ADD https://github.com/cargo-bins/cargo-binstall/releases/latest/download/cargo-binstall-x86_64-unknown-linux-musl.tgz /
 RUN tar -xvf cargo-binstall-x86_64-unknown-linux-musl.tgz && cp cargo-binstall /usr/local/cargo/bin && \
-  cargo binstall --no-track --no-confirm diesel_cli --version 2.1.0 && \
   cargo binstall --no-track --no-confirm cargo-leptos --version 0.1.11 && \
   cargo binstall --no-track --no-confirm trunk --version 0.17.3
+# cargo binstall --no-track --no-confirm diesel_cli --version 2.1.0 && \ # doesn't work... doesn't have binaries, or isn't compiled correctly
 # RUN cargo install wasm-pack --version 0.12.1 # nah
 # RUN cargo install cargo-generate --version 0.18.3 # prolly not needed at all
 
@@ -166,7 +166,8 @@ COPY --from=node --chown=vscode:vscode /home/vscode/.cache /home/vscode/.cache/
 ## this increased file size by like 600 mb... i really don't know why
 # COPY --from=rust-nightly /usr/local/rustup /usr/local/rustup
 COPY --from=node --chown=vscode:vscode /home/vscode/.nvm /home/vscode/.nvm/
-COPY --from=rust-dependencies /usr/local/cargo/bin/diesel /usr/local/cargo/bin/cargo-leptos /usr/local/cargo/bin/trunk /usr/local/cargo/bin/
+COPY --from=diesel /usr/local/cargo/bin/diesel /usr/local/cargo/bin/
+COPY --from=rust-dependencies /usr/local/cargo/bin/cargo-leptos /usr/local/cargo/bin/trunk /usr/local/cargo/bin/
 COPY --from=node --chown=vscode:vscode /home/vscode/.bashrc /home/vscode/
 
 # nah i got the command above
