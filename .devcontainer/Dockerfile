@@ -6,11 +6,11 @@ RUN cargo install diesel_cli --version 2.1.0
 # FROM mcr.microsoft.com/devcontainers/rust:1-1-bullseye as trunk
 # RUN cargo install trunk --version 0.17.3
 
-FROM mcr.microsoft.com/devcontainers/rust:1-1-bullseye as rust-dependencies
+FROM mcr.microsoft.com/devcontainers/rust:1-1-bullseye as cargo-leptos
 ADD https://github.com/cargo-bins/cargo-binstall/releases/latest/download/cargo-binstall-x86_64-unknown-linux-musl.tgz /
 RUN tar -xvf cargo-binstall-x86_64-unknown-linux-musl.tgz && cp cargo-binstall /usr/local/cargo/bin && \
-  cargo binstall --no-track --no-confirm cargo-leptos --version 0.1.11 && \
-  cargo binstall --no-track --no-confirm trunk --version 0.17.3
+  cargo binstall --no-track --no-confirm cargo-leptos --version 0.1.11
+# cargo binstall --no-track --no-confirm trunk --version 0.17.3 # missing glibc
 # cargo binstall --no-track --no-confirm diesel_cli --version 2.1.0 && \ # doesn't work... doesn't have binaries, or isn't compiled correctly
 # RUN cargo install wasm-pack --version 0.12.1 # nah
 # RUN cargo install cargo-generate --version 0.18.3 # prolly not needed at all
@@ -58,10 +58,13 @@ RUN source /home/vscode/.nvm/nvm.sh && \
   npm install --global tailwindcss@3.3.3 sass@1.64.2 && \
   npm cache clean --force
 
-# FROM mcr.microsoft.com/devcontainers/rust:1-1-bullseye as rust-nightly
-# RUN rustup toolchain install nightly-2023-08-08 --allow-downgrade --component rustfmt --component clippy && \
-#   rustup target add --toolchain nightly-2023-08-08 wasm32-unknown-unknown && \
-#   rustup default nightly-2023-08-08
+FROM mcr.microsoft.com/devcontainers/rust:1-1-bullseye as rust-nightly
+RUN rustup toolchain install nightly-2023-08-08 --allow-downgrade \
+  --component rustfmt \
+  --component clippy \
+  --component rust-src && \
+  rustup target add --toolchain nightly-2023-08-08 wasm32-unknown-unknown && \
+  rustup default nightly-2023-08-08
 
 FROM mcr.microsoft.com/devcontainers/rust:1-1-bullseye
 # playwright dependenecies
@@ -156,18 +159,19 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
   apt-get clean && \
   rm -rf /var/lib/apt/lists/*
 
-
 USER vscode
-RUN rustup toolchain install nightly-2023-08-08 --allow-downgrade --component rustfmt --component clippy --component rust-src && \
-  rustup target add --toolchain nightly-2023-08-08 wasm32-unknown-unknown && \
-  rustup default nightly-2023-08-08
+# RUN rustup toolchain install nightly-2023-08-08 --allow-downgrade --component rustfmt --component clippy --component rust-src && \
+#   rustup target add --toolchain nightly-2023-08-08 wasm32-unknown-unknown && \
+#   rustup default nightly-2023-08-08
 
 COPY --from=node --chown=vscode:vscode /home/vscode/.cache /home/vscode/.cache/
-## this increased file size by like 600 mb... i really don't know why
-# COPY --from=rust-nightly /usr/local/rustup /usr/local/rustup
+## this increased file size by like 600 mb... i really don't know why. my guess is that i'm adding more than 600mb of files. namely, 1.2gb because of previous files?
+COPY --from=rust-nightly --chown=vscode:vscode /usr/local/rustup/toolchains/nightly-2023-08-08-x86_64-unknown-linux-gnu /usr/local/rustup/toolchains/nightly-2023-08-08-x86_64-unknown-linux-gnu
+COPY --from=rust-nightly --chown=vscode:vscode /usr/local/rustup/update-hashes/nightly-2023-08-08-x86_64-unknown-linux-gnu /usr/local/rustup/update-hashes/
+COPY --from=rust-nightly --chown=vscode:vscode /usr/local/rustup/settings.toml /usr/local/rustup/
 COPY --from=node --chown=vscode:vscode /home/vscode/.nvm /home/vscode/.nvm/
 COPY --from=diesel /usr/local/cargo/bin/diesel /usr/local/cargo/bin/
-COPY --from=rust-dependencies /usr/local/cargo/bin/cargo-leptos /usr/local/cargo/bin/trunk /usr/local/cargo/bin/
+COPY --from=cargo-leptos /usr/local/cargo/bin/cargo-leptos /usr/local/cargo/bin/
 COPY --from=node --chown=vscode:vscode /home/vscode/.bashrc /home/vscode/
 
 # nah i got the command above

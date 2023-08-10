@@ -23,3 +23,7 @@ npx playwright test
 ```sql
 SELECT * FROM recipes;
 ```
+
+```bash
+docker build --tag rust-recipe-gallery-devcontainer-test .
+```

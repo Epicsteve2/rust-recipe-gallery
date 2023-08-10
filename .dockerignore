@@ -11,3 +11,5 @@ frontend/dist
 frontend/end2end/node_modules/
 frontend/end2end/test-results/
 frontend/end2end/playwright-report/
+
+.devcontainer
