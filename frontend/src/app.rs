@@ -1,6 +1,13 @@
-use leptos::*;
+use gloo_net::http::Request;
+use leptos::{ev::SubmitEvent, *};
 use leptos_meta::*;
 use leptos_router::*;
+use serde::{Deserialize, Serialize};
+use thiserror::Error;
+use uuid::Uuid;
+use validator::Validate;
+
+use crate::components::add_post_form::AddRecipeForm;
 
 #[component]
 pub fn App(cx: Scope) -> impl IntoView {
@@ -31,7 +38,6 @@ pub fn App(cx: Scope) -> impl IntoView {
 fn Home(cx: Scope) -> impl IntoView {
     view! { cx,
         <Title text="Rust Recipe Gallery"/>
-        // <div class="bg-gradient-to-tl from-blue-800 to-blue-500 text-white font-mono flex flex-col min-h-screen">
         <div class="bg-gradient-to-tl from-lime-300 to-lime-100 text-black font-mono flex flex-auto items-center justify-center">
             <h1 class="m-auto text-center">"Cook!"</h1>
         </div>
@@ -41,7 +47,6 @@ fn Home(cx: Scope) -> impl IntoView {
 #[component]
 pub fn TopNavBar(cx: Scope) -> impl IntoView {
     view! { cx,
-        // <nav class="bg-green-600 flex flex-col h-6 p-6 py-8 text-center text-xl text-white font-medium">
         <nav class="bg-green-600 text-white">
             <div class="max-w-screen-xl flex flex-wrap items-center justify-between mx-auto p-6">
                 <div><a class="font-medium" href="/">"Rust Recipe Gallery"</a></div>
@@ -49,7 +54,6 @@ pub fn TopNavBar(cx: Scope) -> impl IntoView {
                     <ul class="flex">
                         <li><a class="pr-4 hover:text-green-200" href="/recipes">"Gallery"</a></li>
                         <li><a class="pr-4 hover:text-green-200" href="/recipes/add">"Add Recipe"</a></li>
-                        // <li><a class="pr-4 hover:text-blue-700" href="">"Login?????"</a></li>
                     </ul>
                 </div>
             </div>
@@ -57,100 +61,85 @@ pub fn TopNavBar(cx: Scope) -> impl IntoView {
     }
 }
 
+#[derive(Debug, Serialize, Validate)]
+pub struct PostRecipe {
+    #[validate(length(min = 2, message = "must be at least 2 characters"))]
+    pub title: String,
+    #[validate(length(min = 2, message = "must have at least 1 ingredient"))]
+    pub ingredients: String,
+    #[validate(length(min = 2, message = "must have a body"))]
+    pub body: String,
+}
+
+#[derive(Debug, serde::Serialize)]
+pub struct Recipe {
+    pub id: Uuid,
+    pub title: String,
+    pub ingredients: String,
+    pub body: String,
+}
+
+#[derive(Error, Debug)]
+pub enum AppError {
+    #[error(transparent)]
+    ValidationError(#[from] validator::ValidationErrors),
+    #[error(transparent)]
+    GlooError(#[from] gloo_net::Error),
+}
+
+async fn post_recipe(
+    title: String,
+    ingredients: String,
+    steps: String,
+) -> Result<Recipe, AppError> {
+    let recipe = PostRecipe {
+        title,
+        ingredients,
+        body: steps,
+    };
+    dbg!(&recipe);
+    recipe.validate()?;
+    let json_response = Request::post("http://0.0.0.0:7979/api/recipe/new")
+        .json(&recipe)?
+        .send()
+        .await?
+        .json()
+        .await?;
+    // dbg!(json_response);
+    log!("{:?}", json_response);
+    todo!()
+}
+
 #[component]
 pub fn AddRecipe(cx: Scope) -> impl IntoView {
-    let query = use_query_map(cx);
-    let title = move || query().get("title").cloned().unwrap_or_default();
-    let ingredients = move || query().get("ingredients").cloned().unwrap_or_default();
-    let steps = move || query().get("steps").cloned().unwrap_or_default();
+    let (post_error, set_post_error) = create_signal(cx, None::<String>);
+    let (wait_for_response, set_wait_for_response) = create_signal(cx, false);
+    let post_recipe_action = create_action(
+        cx,
+        move |(title, ingredients, steps): &(String, String, String)| {
+            let title = title.to_string();
+            let ingredients = ingredients.to_string();
+            let steps = steps.to_string();
+            log!("{title}, {ingredients}, {steps}");
+            async move {
+                set_wait_for_response.update(|w| *w = true);
+                gloo_timers::future::TimeoutFuture::new(1_000).await;
+                log!("sending post request");
+                post_recipe(title.clone(), ingredients.clone(), steps.clone()).await;
+                log!("finished sending post request");
+                set_wait_for_response.update(|w| *w = false);
+            }
+        },
+    );
+    let disabled = Signal::derive(cx, move || wait_for_response.get());
 
     view! { cx,
         <Title text="Rust Recipe Gallery - Add Recipe"/>
-
-        // <nav class="bg-green-600 flex flex-col h-6 p-6 py-8 text-center text-xl text-white font-medium">
-        <div class="w-full max-w-lg text-black mx-auto py-8">
-            <Form class="bg-white shadow-md rounded px-8 pt-6 pb-5 mb-2" method="GET" action="">
-                <div class="w-full text-black text-2xl pb-4 text-center">
-                    <h1>Create new recipe</h1>
-                </div>
-                <div class="mb-5">
-                    <label for="title" class="block text-gray-700 text-lg font-bold mb-1" value=title>Title</label>
-                    <input type="text" id="title" placeholder="Title"
-                        class="shadow
-                            rounded-lg
-                            w-full
-                            py-2
-                            px-3
-                            bg-gray-50
-                            text-gray-700
-                            border
-                            leading-tight
-                            border-gray-300
-                            focus:ring-green-500
-                            focus:border-green-500"
-                    />
-                </div>
-                <div class="mb-5">
-                    <label for="ingredients" class="block text-gray-700 text-lg font-bold mb-1">Ingredients</label>
-                    // <input type="text" id="ingredients"/>
-                    <textarea id="ingredients" rows="4" cols="50"
-                        class="block
-                            p-2.5
-                            w-full
-                            bg-gray-50
-                            text-gray-700
-                            rounded-lg
-                            leading-tight
-                            border
-                            border-gray-300
-                            focus:ring-green-500
-                            focus:border-green-500"
-                        placeholder="Write your ingredients here..."
-                        value=ingredients
-                    />
-                </div>
-                <div class="mb-5">
-                    <label for="steps" class="block text-gray-700 text-lg font-bold mb-1">Steps</label>
-                    // <input type="text"/>
-                    <textarea
-                        id="steps"
-                        rows="4"
-                        cols="50"
-                        class="block
-                            p-2.5
-                            w-full
-                            bg-gray-50
-                            text-gray-700
-                            rounded-lg
-                            leading-tight
-                            border
-                            border-gray-300
-                            focus:ring-green-500
-                            focus:border-green-500"
-                        placeholder="Write your steps here..."
-                        value=steps
-                    />
-                </div>
-                <div class="text-right">
-                    <input class="bg-green-500
-                        hover:bg-green-700
-                        text-white
-                        border-gray-300
-                        font-bold
-                        py-2
-                        px-4
-                        rounded-lg
-                        focus:outline-none
-                        focus:shadow-outline"
-                        type="submit"
-                    >
-                        "Create Recipe"
-                    </input>
-                    //  <input type="submit"/>
-                </div>
-            </Form>
-            <h1>{title}</h1>
-        </div>
+        <AddRecipeForm
+            action=post_recipe_action
+            error=post_error.into()
+            disabled
+        />
     }
 }
 

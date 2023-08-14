@@ -9,7 +9,7 @@ use crate::{errors::AppError, middleware::print_body_middleware};
 use axum::routing::delete;
 use axum::{
     extract::State,
-    http::StatusCode,
+    http::{Method, StatusCode},
     middleware as auxm_middleware,
     response::IntoResponse,
     routing::{get, post},
@@ -20,6 +20,7 @@ use middleware::{custom_json_extractor::InputJson, custom_path_extractor::InputP
 use models::{Comment, PatchComment, PostComment};
 use serde_json::{json, Value};
 use std::{env, net::SocketAddr};
+use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 use uuid::Uuid;
@@ -65,6 +66,13 @@ async fn main() -> Result<(), anyhow::Error> {
             delete(delete_comment),
         )
         .layer(auxm_middleware::from_fn(print_body_middleware::print_body))
+        .layer(
+            CorsLayer::new()
+                // .allow_origin("http://0.0.0.0:7979".parse::<HeaderValue>().unwrap())
+                .allow_origin(tower_http::cors::Any)
+                .allow_methods([Method::GET, Method::POST, Method::PATCH])
+                .allow_headers([axum::http::header::CONTENT_TYPE]),
+        )
         .layer(
             TraceLayer::new_for_http()
                 .make_span_with(

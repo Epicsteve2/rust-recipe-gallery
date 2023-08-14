@@ -28,6 +28,12 @@ wasm-bindgen = "0.2.87"
 thiserror = "1.0.44"
 tracing = { version = "0.1.37", optional = true }
 http = "0.2.9"
+validator = { version = "0.16.1", features = ["derive"] }
+serde = { version = "1.0.183", features = ["derive"] }
+serde_json = "1.0.104"
+uuid = { version = "1.4.1", features = ["serde", "v4"] }
+gloo-net = "0.4.0"                                                   # there's Reqwasm and gloo-net for WASM specifically. plus reqwest, but that's for
+gloo-timers = { version = "0.3.0", features = ["futures"] }          # for testing
 
 [features]
 hydrate = ["leptos/hydrate", "leptos_meta/hydrate", "leptos_router/hydrate"]
