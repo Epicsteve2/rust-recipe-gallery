@@ -1977,6 +1977,7 @@ dependencies = [
 name = "rust-recipe-gallery-frontend"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "axum",
  "cfg-if",
  "console_error_panic_hook",

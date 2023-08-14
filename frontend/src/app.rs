@@ -71,7 +71,7 @@ pub struct PostRecipe {
     pub body: String,
 }
 
-#[derive(Debug, serde::Serialize)]
+#[derive(Debug, serde::Deserialize)] // clone for signals
 pub struct Recipe {
     pub id: Uuid,
     pub title: String,
@@ -79,12 +79,14 @@ pub struct Recipe {
     pub body: String,
 }
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug)] // clone for signals
 pub enum AppError {
     #[error(transparent)]
     ValidationError(#[from] validator::ValidationErrors),
     #[error(transparent)]
     GlooError(#[from] gloo_net::Error),
+    #[error(transparent)]
+    OtherError(#[from] anyhow::Error),
 }
 
 async fn post_recipe(
@@ -97,22 +99,29 @@ async fn post_recipe(
         ingredients,
         body: steps,
     };
-    dbg!(&recipe);
+    // dbg!(&recipe);
     recipe.validate()?;
     let json_response = Request::post("http://0.0.0.0:7979/api/recipe/new")
         .json(&recipe)?
         .send()
         .await?
-        .json()
+        // .map_err(|e| log!("Error: {e:#?}"))
+        .json::<Recipe>()
         .await?;
+
+    // .json()
+    // .await;
     // dbg!(json_response);
-    log!("{:?}", json_response);
-    todo!()
+    // log!("{:?}", json_response);
+    // todo!()
+    Ok(json_response)
 }
 
 #[component]
 pub fn AddRecipe(cx: Scope) -> impl IntoView {
-    let (post_error, set_post_error) = create_signal(cx, None::<String>);
+    let (post_response, set_response) = create_signal(cx, Ok(None::<Recipe>));
+
+    // let (post_error, set_post_error) = create_signal(cx, None::<String>);
     let (wait_for_response, set_wait_for_response) = create_signal(cx, false);
     let post_recipe_action = create_action(
         cx,
@@ -123,9 +132,17 @@ pub fn AddRecipe(cx: Scope) -> impl IntoView {
             log!("{title}, {ingredients}, {steps}");
             async move {
                 set_wait_for_response.update(|w| *w = true);
-                gloo_timers::future::TimeoutFuture::new(1_000).await;
                 log!("sending post request");
-                post_recipe(title.clone(), ingredients.clone(), steps.clone()).await;
+                let response = post_recipe(title.clone(), ingredients.clone(), steps.clone()).await;
+                match &response {
+                    Ok(recipe) => {
+                        log!("{recipe:#?}")
+                    }
+                    Err(e) => {
+                        log!("{e:#?}")
+                    }
+                }
+                set_response.update(|w| *w = response.map(|inside| Some(inside)));
                 log!("finished sending post request");
                 set_wait_for_response.update(|w| *w = false);
             }
@@ -137,7 +154,8 @@ pub fn AddRecipe(cx: Scope) -> impl IntoView {
         <Title text="Rust Recipe Gallery - Add Recipe"/>
         <AddRecipeForm
             action=post_recipe_action
-            error=post_error.into()
+            // error=post_error.into()
+            response=post_response
             disabled
         />
     }
