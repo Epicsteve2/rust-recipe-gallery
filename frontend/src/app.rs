@@ -23,6 +23,7 @@ pub fn App(cx: Scope) -> impl IntoView {
             <Router>
                 <Routes>
                     <Route path="/" view=  move |cx| view! { cx, <Home/> }/>
+                    <Route path="/recipes" view=  move |cx| view! { cx, <AllRecipes/> }/>
                     <Route path="/recipes/add" view=  move |cx| view! { cx, <AddRecipe/> }/>
                 </Routes>
             </Router>
@@ -60,6 +61,54 @@ async fn post_recipe(
         .json::<Recipe>()
         .await?;
     Ok(json_response)
+}
+
+async fn get_all_recipes() -> Result<Vec<Recipe>, String> {
+    let json_response = Request::get("http://0.0.0.0:7979/api/recipe")
+        .send()
+        .await
+        .map_err(|e| e.to_string())?
+        .json::<Vec<Recipe>>()
+        .await
+        .map_err(|e| e.to_string())?;
+    Ok(json_response)
+}
+
+#[component]
+pub fn AllRecipes(cx: Scope) -> impl IntoView {
+    let async_get_recipes = create_resource(
+        cx,
+        || (),
+        |_| async move {
+            log!("Getting recipes...");
+            get_all_recipes().await
+        },
+    );
+
+    view! { cx,
+        <div>
+            <Suspense
+                fallback=move || view! { cx, <p>"Loading..."</p> }
+            >
+                <ul>
+                    {move || async_get_recipes.read(cx).map(|inside| {
+                        match inside {
+                            Err(e) => view! ( cx, <p>"Error: " {e.to_string()}</p>).into_view(cx),
+                            Ok(recipe_list) => recipe_list.iter().map(|recipe| {
+                                view! ( cx,
+                                    <li>
+                                        <a href=format!("/recipes/{}", recipe.id.to_string())>
+                                            {recipe.title.clone()}
+                                        </a>
+                                    </li>
+                                )
+                            }).collect_view(cx)
+                        }
+                    })}
+                </ul>
+            </Suspense>
+        </div>
+    }
 }
 
 #[component]

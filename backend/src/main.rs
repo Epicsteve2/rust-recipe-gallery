@@ -115,6 +115,7 @@ async fn post_recipe(
     Ok((StatusCode::CREATED, Json(result)))
 }
 
+// Should return an object instead of an array, oops
 async fn get_all_recipe(State(pool): State<Pool>) -> Result<impl IntoResponse, AppError> {
     let result = database::controller::read_all_recipe(pool).await?;
     Ok((StatusCode::OK, Json(result)))

@@ -13,7 +13,7 @@ pub struct PostRecipe {
     pub body: String,
 }
 
-#[derive(Debug, serde::Deserialize)] // need clone for signals
+#[derive(Debug, serde::Deserialize, Clone, Serialize)] // need clone for signals
 pub struct Recipe {
     pub id: Uuid,
     pub title: String,
