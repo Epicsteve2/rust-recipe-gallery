@@ -7,7 +7,7 @@ use validator::Validate;
 use crate::components::add_post_form::AddRecipeForm;
 use crate::components::footer::Footer;
 use crate::components::top_nav_bar::TopNavBar;
-use crate::models::{AppError, PostRecipe, Recipe};
+use crate::models::{AppError, PostRecipe, Recipe, RecipeComment, RecipeCommentsJson};
 
 #[component]
 pub fn App(cx: Scope) -> impl IntoView {
@@ -83,6 +83,46 @@ async fn get_recipe_by_id(id: String) -> Result<Recipe, String> {
         .json::<Recipe>()
         .await
         .map_err(|e| e.to_string())?;
+    Ok(json_response)
+}
+
+async fn get_comments_by_recipe_id(id: String) -> Result<Vec<RecipeComment>, String> {
+    let json_response =
+        Request::get(format!("http://0.0.0.0:7979/api/recipe/{id}/comments").as_str())
+            .send()
+            .await
+            .map_err(|e| e.to_string())?
+            .json::<RecipeCommentsJson>()
+            .await
+            .map_err(|e| e.to_string())?;
+    Ok(json_response.results)
+}
+
+async fn delete_comment_by_id(
+    recipe_id: String,
+    comment_id: String,
+) -> Result<RecipeComment, String> {
+    let json_response = Request::get(
+        format!("http://0.0.0.0:7979/api/recipe/{recipe_id}/comments/{comment_id}").as_str(),
+    )
+    .send()
+    .await
+    .map_err(|e| e.to_string())?
+    .json::<RecipeComment>()
+    .await
+    .map_err(|e| e.to_string())?;
+    Ok(json_response)
+}
+
+async fn delete_recipe_by_id(recipe_id: String) -> Result<Recipe, String> {
+    let json_response =
+        Request::delete(format!("http://0.0.0.0:7979/api/recipe/{recipe_id}").as_str())
+            .send()
+            .await
+            .map_err(|e| e.to_string())?
+            .json::<Recipe>()
+            .await
+            .map_err(|e| e.to_string())?;
     Ok(json_response)
 }
 
@@ -170,6 +210,41 @@ pub fn ShowRecipe(cx: Scope) -> impl IntoView {
         |id| async move { get_recipe_by_id(id).await },
     );
 
+    let async_get_comments_by_recipe_id = create_resource(
+        cx,
+        move || params().get("id").cloned().unwrap_or_default(),
+        |id| async move { get_comments_by_recipe_id(id).await },
+    );
+
+    // let delete_comment_action =
+    //     create_action(cx, move |(recipe_id, comment_id): &(String, String)| {
+    //         let recipe_id = recipe_id.to_string();
+    //         let comment_id = comment_id.to_string();
+    //         async move {
+    //             // TODO: wait for response
+    //             let response = delete_comment_by_id(recipe_id, comment_id).await;
+    //             let navigate = leptos_router::use_navigate(cx);
+    //             log!("{response:#?}");
+    //             navigate("/", Default::default());
+    //         }
+    //     });
+
+    let delete_recipe_action = create_action(cx, move |recipe_id: &String| {
+        let recipe_id = recipe_id.to_string();
+        async move {
+            // TODO: wait for response
+            let response = delete_recipe_by_id(recipe_id).await;
+            let navigate = leptos_router::use_navigate(cx);
+            log!("{response:#?}");
+            match navigate("/recipes", Default::default()) {
+                Err(e) => log!("{e:#?}"),
+                Ok(_) => {}
+            }
+        }
+    });
+
+    // let delete_recipe_action_dispatch = move || delete_recipe_action.dispatch(id());
+
     view! { cx,
         <Title text=format!("Rust Recipe Gallery - Recipe {}", get_id())/>
         <div>
@@ -183,8 +258,31 @@ pub fn ShowRecipe(cx: Scope) -> impl IntoView {
                                     <div>{recipe.title}</div>
                                     <div>{recipe.ingredients}</div>
                                     <div>{recipe.body}</div>
+                                    <button on:click= move |_| delete_recipe_action.dispatch(id())>
+                                        "Delete?"
+                                    </button>
+                                    <button>"Edit?"</button>
                                 </li>
                             ).into_view(cx)
+                    }
+                })}
+            </Suspense>
+            <Suspense fallback=move || view! (cx, <p>"Loading comments..."</p>)>
+                {move || async_get_comments_by_recipe_id.read(cx).map(|inside_some| {
+                    match inside_some {
+                        Err(e) => view! ( cx, <p>"Error: " {e.to_string()}</p>).into_view(cx),
+                        Ok(comments) =>
+                            comments.iter().map(|comment| {
+                                view! ( cx,
+                                    <li>
+                                        <div>{comment.comment.clone()}</div> // idk why i have to clone
+                                        <button>
+                                            "Delete?"
+                                        </button>
+                                        <button>"Edit?"</button>
+                                    </li>
+                                ).into_view(cx)
+                            }).collect_view(cx)
                     }
                 })}
             </Suspense>

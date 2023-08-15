@@ -30,3 +30,15 @@ pub enum AppError {
     #[error(transparent)]
     OtherError(#[from] anyhow::Error),
 }
+
+#[derive(Debug, serde::Deserialize, Clone, Serialize)] // need clone for signals
+pub struct RecipeCommentsJson {
+    pub results: Vec<RecipeComment>,
+}
+
+#[derive(Debug, serde::Deserialize, Clone, Serialize)] // need clone for signals
+pub struct RecipeComment {
+    pub comment: String,
+    pub id: Uuid,
+    pub recipe_id: Uuid,
+}
