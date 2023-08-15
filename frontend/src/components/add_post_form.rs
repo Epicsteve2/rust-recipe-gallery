@@ -1,13 +1,12 @@
 use leptos::*;
 
-use crate::app::{AppError, Recipe};
+use crate::models::{AppError, Recipe};
 
 #[component]
 pub fn AddRecipeForm(
     cx: Scope,
     action: Action<(String, String, String), ()>,
     response: ReadSignal<Result<Option<Recipe>, AppError>>,
-    // error: Signal<Option<String>>,
     disabled: Signal<bool>,
 ) -> impl IntoView {
     let (title, set_title) = create_signal(cx, String::new());
@@ -15,9 +14,6 @@ pub fn AddRecipeForm(
     let (body, set_body) = create_signal(cx, String::new());
 
     let dispatch_action = move || action.dispatch((title.get(), ingredients.get(), body.get()));
-    // let (response, set_response) = create_signal(cx, None::<Result<Recipe, AppError>>);
-
-    // let has_sent_a_request = move || response.get().is_some();
 
     let button_is_disabled = Signal::derive(cx, move || {
         disabled.get()
@@ -29,45 +25,6 @@ pub fn AddRecipeForm(
     view! { cx,
         <div class="w-full max-w-lg text-black mx-auto py-8">
             <form class="bg-white shadow-md rounded px-8 pt-6 pb-5 mb-2" on:submit=|ev| ev.prevent_default()>
-                <div>
-                    // {move || if response.with(|n| n.is_some()) {
-                    //     view! { cx,
-                    //         <ErrorBoundary
-                    //             fallback=|cx, errors| view! { cx,
-                    //                 <p>{format!("{errors:#?}")}</p>
-                    //             }
-                    //         >
-                    //             <p>{format!("{:#?}", response.with(|n| n.as_ref().unwrap().as_ref().ok().unwrap().id))}</p>
-                    //         </ErrorBoundary>
-                    //     }
-                    // } else {
-                    //     view! { cx,
-                    //         <></>
-                    //     }.into_view(cx)
-                    // }}
-                    // <ErrorBoundary
-                    //     fallback=|cx, errors| view! { cx,
-                    //         <p>{format!("{errors:#?}")}</p>
-                    //     }
-                    // >
-                    {move || if response.with(|n| n.as_ref().is_ok()) {
-                        if response.with(|n| n.as_ref().unwrap().is_some()) {
-                            view! { cx,
-                                <p class="text-green-300">{format!("{:#?}", response.with(|n| n.as_ref().unwrap().as_ref().unwrap().id))}</p>
-                            }.into_view(cx)
-                        } else {
-                            view! { cx,
-                                <></>
-                            }.into_view(cx)
-                        }
-                    } else {
-                        view! { cx,
-                            <p class="text-red-400">{format!("{:#?}", response.with(|n| n.as_ref().unwrap_err().to_string()))}</p>
-                            // <p>{format!("Error")}</p>
-                        }.into_view(cx)
-                    }}
-                    // </ErrorBoundary>
-                </div>
                 <div class="w-full text-black text-2xl pb-4 text-center">
                     <h1>"Create new recipe"</h1>
                 </div>
@@ -130,7 +87,6 @@ pub fn AddRecipeForm(
                 </div>
                 <div class="mb-5">
                     <label for="steps" class="block text-gray-700 text-lg font-bold mb-1">Steps</label>
-                    // <input type="text"/>
                     <textarea
                         id="steps"
                         rows="4"
@@ -177,6 +133,30 @@ pub fn AddRecipeForm(
                     >
                         "Create Recipe"
                     </button>
+                </div>
+                <div class="pt-2">
+                    // I am doing this very incorrectly
+                    {move || if response.with(|n| n.as_ref().is_ok()) {
+                        if response.with(|n| n.as_ref().unwrap().is_some()) {
+                            view! { cx,
+                                <p class="text-green-500">
+                                    <strong>"Success! Recipe ID: "</strong>
+                                    {response.with(|n| n.as_ref().unwrap().as_ref().unwrap().id.to_string())}
+                                </p>
+                            }.into_view(cx)
+                        } else {
+                            view! { cx,
+                                <></>
+                            }.into_view(cx)
+                        }
+                    } else {
+                        view! { cx,
+                            <p class="text-red-500">
+                                    <strong>"Error: "</strong>
+                                    {response.with(|n| n.as_ref().unwrap_err().to_string())}
+                            </p>
+                        }.into_view(cx)
+                    }}
                 </div>
             </form>
         </div>
