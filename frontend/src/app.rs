@@ -25,6 +25,7 @@ pub fn App(cx: Scope) -> impl IntoView {
                     <Route path="/" view=  move |cx| view! { cx, <Home/> }/>
                     <Route path="/recipes" view=  move |cx| view! { cx, <AllRecipes/> }/>
                     <Route path="/recipes/add" view=  move |cx| view! { cx, <AddRecipe/> }/>
+                    <Route path="/recipes/:id" view=  move |cx| view! { cx, <ShowRecipe/> }/>
                 </Routes>
             </Router>
         </main>
@@ -74,6 +75,17 @@ async fn get_all_recipes() -> Result<Vec<Recipe>, String> {
     Ok(json_response)
 }
 
+async fn get_recipe_by_id(id: String) -> Result<Recipe, String> {
+    let json_response = Request::get(format!("http://0.0.0.0:7979/api/recipe/{id}").as_str())
+        .send()
+        .await
+        .map_err(|e| e.to_string())?
+        .json::<Recipe>()
+        .await
+        .map_err(|e| e.to_string())?;
+    Ok(json_response)
+}
+
 #[component]
 pub fn AllRecipes(cx: Scope) -> impl IntoView {
     let async_get_recipes = create_resource(
@@ -86,6 +98,7 @@ pub fn AllRecipes(cx: Scope) -> impl IntoView {
     );
 
     view! { cx,
+        <Title text="Rust Recipe Gallery - Recipe Gallery"/>
         <div>
             <Suspense
                 fallback=move || view! { cx, <p>"Loading..."</p> }
@@ -142,5 +155,39 @@ pub fn AddRecipe(cx: Scope) -> impl IntoView {
             response=post_response
             disabled
         />
+    }
+}
+
+#[component]
+pub fn ShowRecipe(cx: Scope) -> impl IntoView {
+    let params = use_params_map(cx);
+    let id = move || params.with(|params| params.get("id").cloned().unwrap_or_default());
+    let get_id = move || id();
+
+    let async_get_recipe = create_resource(
+        cx,
+        move || params().get("id").cloned().unwrap_or_default(),
+        |id| async move { get_recipe_by_id(id).await },
+    );
+
+    view! { cx,
+        <Title text=format!("Rust Recipe Gallery - Recipe {}", get_id())/>
+        <div>
+            <Suspense fallback=move || view! (cx, <p>"Loading..."</p>)>
+                {move || async_get_recipe.read(cx).map(|inside_some| {
+                    match inside_some {
+                        Err(e) => view! ( cx, <p>"Error: " {e.to_string()}</p>).into_view(cx),
+                        Ok(recipe) =>
+                            view! ( cx,
+                                <li>
+                                    <div>{recipe.title}</div>
+                                    <div>{recipe.ingredients}</div>
+                                    <div>{recipe.body}</div>
+                                </li>
+                            ).into_view(cx)
+                    }
+                })}
+            </Suspense>
+        </div>
     }
 }
