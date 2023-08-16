@@ -1,4 +1,5 @@
 use cfg_if::cfg_if;
+pub mod api;
 pub mod app;
 mod components;
 pub mod fallback;

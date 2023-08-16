@@ -8,6 +8,9 @@ pub fn AddRecipeForm(
     action: Action<(String, String, String), ()>,
     response: ReadSignal<Result<Option<Recipe>, AppError>>,
     disabled: Signal<bool>,
+    #[prop(optional)] title_fallback: String,
+    #[prop(optional)] ingredients_fallback: String,
+    #[prop(optional)] steps_fallback: String,
 ) -> impl IntoView {
     let (title, set_title) = create_signal(cx, String::new());
     let (ingredients, set_ingredients) = create_signal(cx, String::new());
@@ -31,6 +34,7 @@ pub fn AddRecipeForm(
                 <div class="mb-5">
                     <label for="title" class="block text-gray-700 text-lg font-bold mb-1">"Title"</label>
                     <input type="text" id="title" placeholder="Title"
+                        value=title_fallback
                         required
                         class="shadow
                             rounded-lg
@@ -60,7 +64,8 @@ pub fn AddRecipeForm(
                 <div class="mb-5">
                     <label for="ingredients" class="block text-gray-700 text-lg font-bold mb-1">Ingredients</label>
                     <textarea id="ingredients" rows="4" cols="50"
-                            required
+                        required
+                        value=ingredients_fallback
                         class="block
                             p-2.5
                             w-full
@@ -91,6 +96,7 @@ pub fn AddRecipeForm(
                         id="steps"
                         rows="4"
                         required
+                        value=steps_fallback
                         cols="50"
                         class="block
                             p-2.5

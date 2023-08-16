@@ -28,7 +28,11 @@ pub enum AppError {
     #[error(transparent)]
     GlooError(#[from] gloo_net::Error),
     #[error(transparent)]
-    OtherError(#[from] anyhow::Error),
+    ReqwestError(#[from] reqwest::Error),
+    #[error(transparent)]
+    UuidError(#[from] uuid::Error),
+    // #[error(transparent)]
+    // OtherError(#[from] anyhow::Error),
 }
 
 #[derive(Debug, serde::Deserialize, Clone, Serialize)] // need clone for signals

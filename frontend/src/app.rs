@@ -1,13 +1,12 @@
-use gloo_net::http::Request;
 use leptos::*;
 use leptos_meta::*;
 use leptos_router::*;
-use validator::Validate;
 
+use crate::api::*;
 use crate::components::add_post_form::AddRecipeForm;
 use crate::components::footer::Footer;
 use crate::components::top_nav_bar::TopNavBar;
-use crate::models::{AppError, PostRecipe, Recipe, RecipeComment, RecipeCommentsJson};
+use crate::models::Recipe;
 
 #[component]
 pub fn App(cx: Scope) -> impl IntoView {
@@ -26,6 +25,7 @@ pub fn App(cx: Scope) -> impl IntoView {
                     <Route path="/recipes" view=  move |cx| view! { cx, <AllRecipes/> }/>
                     <Route path="/recipes/add" view=  move |cx| view! { cx, <AddRecipe/> }/>
                     <Route path="/recipes/:id" view=  move |cx| view! { cx, <ShowRecipe/> }/>
+                    <Route path="/recipes/:id/edit" view=  move |cx| view! { cx, <EditRecipe/> }/>
                 </Routes>
             </Router>
         </main>
@@ -42,101 +42,6 @@ fn Home(cx: Scope) -> impl IntoView {
             <h1 class="m-auto text-center">"Cook!"</h1>
         </div>
     }
-}
-
-async fn post_recipe(
-    title: String,
-    ingredients: String,
-    steps: String,
-) -> Result<Recipe, AppError> {
-    let recipe = PostRecipe {
-        title,
-        ingredients,
-        body: steps,
-    };
-    recipe.validate()?;
-    let json_response = Request::post("http://0.0.0.0:7979/api/recipe/new")
-        .json(&recipe)?
-        .send()
-        .await?
-        .json::<Recipe>()
-        .await?;
-    Ok(json_response)
-}
-
-#[cfg(not(feature = "ssr"))]
-async fn get_all_recipes() -> Result<Vec<Recipe>, String> {
-    let json_response = Request::get("http://0.0.0.0:7979/api/recipe")
-        .send()
-        .await
-        .map_err(|e| e.to_string())?
-        .json::<Vec<Recipe>>()
-        .await
-        .map_err(|e| e.to_string())?;
-    Ok(json_response)
-}
-
-// Docs  say to do this to fix an error where the server is attempting to call WASM. wahtever, just use reqwest for both
-#[cfg(feature = "ssr")]
-async fn get_all_recipes() -> Result<Vec<Recipe>, String> {
-    let json_response = reqwest::get("http://0.0.0.0:7979/api/recipe")
-        .await
-        .map_err(|e| e.to_string())?
-        .json::<Vec<Recipe>>()
-        .await
-        .map_err(|e| e.to_string())?;
-    Ok(json_response)
-}
-
-async fn get_recipe_by_id(id: String) -> Result<Recipe, String> {
-    let json_response = Request::get(format!("http://0.0.0.0:7979/api/recipe/{id}").as_str())
-        .send()
-        .await
-        .map_err(|e| e.to_string())?
-        .json::<Recipe>()
-        .await
-        .map_err(|e| e.to_string())?;
-    Ok(json_response)
-}
-
-async fn get_comments_by_recipe_id(id: String) -> Result<Vec<RecipeComment>, String> {
-    let json_response =
-        Request::get(format!("http://0.0.0.0:7979/api/recipe/{id}/comments").as_str())
-            .send()
-            .await
-            .map_err(|e| e.to_string())?
-            .json::<RecipeCommentsJson>()
-            .await
-            .map_err(|e| e.to_string())?;
-    Ok(json_response.results)
-}
-
-async fn delete_comment_by_id(
-    recipe_id: String,
-    comment_id: String,
-) -> Result<RecipeComment, String> {
-    let json_response = Request::get(
-        format!("http://0.0.0.0:7979/api/recipe/{recipe_id}/comments/{comment_id}").as_str(),
-    )
-    .send()
-    .await
-    .map_err(|e| e.to_string())?
-    .json::<RecipeComment>()
-    .await
-    .map_err(|e| e.to_string())?;
-    Ok(json_response)
-}
-
-async fn delete_recipe_by_id(recipe_id: String) -> Result<Recipe, String> {
-    let json_response =
-        Request::delete(format!("http://0.0.0.0:7979/api/recipe/{recipe_id}").as_str())
-            .send()
-            .await
-            .map_err(|e| e.to_string())?
-            .json::<Recipe>()
-            .await
-            .map_err(|e| e.to_string())?;
-    Ok(json_response)
 }
 
 #[component]
@@ -213,10 +118,67 @@ pub fn AddRecipe(cx: Scope) -> impl IntoView {
 }
 
 #[component]
+pub fn EditRecipe(cx: Scope) -> impl IntoView {
+    let params = use_params_map(cx);
+    let id = move || params.with(|params| params.get("id").cloned().unwrap_or_default());
+    // let id_string = id();
+
+    let async_get_recipe = create_resource(
+        cx,
+        move || params().get("id").cloned().unwrap_or_default(),
+        |id| async move { get_recipe_by_id(id).await },
+    );
+
+    let (patch_response, set_response) = create_signal(cx, Ok(None::<Recipe>));
+    let (wait_for_response, set_wait_for_response) = create_signal(cx, false);
+    let disabled = Signal::derive(cx, move || wait_for_response.get());
+    let patch_recipe_action = create_action(
+        cx,
+        move |(title, ingredients, steps): &(String, String, String)| {
+            let title = title.to_string();
+            let ingredients = ingredients.to_string();
+            let steps = steps.to_string();
+            let id_string = id();
+
+            async move {
+                set_wait_for_response.update(|w| *w = true);
+                log!("sending post request");
+                let response = patch_recipe_by_id(id_string, title, ingredients, steps).await;
+                log!("{response:#?}");
+                set_response.update(|w| *w = response.map(|inside| Some(inside)));
+                log!("finished sending post request");
+                set_wait_for_response.update(|w| *w = false);
+            }
+        },
+    );
+    view! { cx,
+        <Title text="Rust Recipe Gallery - Edit Recipe"/>
+        <Suspense fallback=move || view! (cx, <h1 class="mt-5 text-center p-6 bg-green-400 rounded-lg">"Loading..."</h1>)>
+            <AddRecipeForm
+                action=patch_recipe_action
+                response=patch_response
+                disabled
+                title_fallback=match async_get_recipe.read(cx).map(|inside_some| {
+                    log!("{:#?}", inside_some);
+                    match inside_some {
+                        Err(_) => "".to_string(),
+                        Ok(recipe) => recipe.title
+                    }
+                }) {
+                    None => "".to_string(),
+                    Some(string_inside) => string_inside
+                }
+            />
+        </Suspense>
+    }
+}
+
+#[component]
 pub fn ShowRecipe(cx: Scope) -> impl IntoView {
     let params = use_params_map(cx);
     let id = move || params.with(|params| params.get("id").cloned().unwrap_or_default());
-    let get_id = move || id();
+    let generate_title = move || format!("Rust Recipe Gallery - Recipe {}", id());
+    let generate_edit_href = move || format!("/recipes/{}/edit", id());
 
     let async_get_recipe = create_resource(
         cx,
@@ -246,7 +208,7 @@ pub fn ShowRecipe(cx: Scope) -> impl IntoView {
     let delete_recipe_action = create_action(cx, move |recipe_id: &String| {
         let recipe_id = recipe_id.to_string();
         async move {
-            // TODO: wait for response
+            // TODO: wait for response, or not. idc
             let response = delete_recipe_by_id(recipe_id).await;
             let navigate = leptos_router::use_navigate(cx);
             log!("{response:#?}");
@@ -263,7 +225,7 @@ pub fn ShowRecipe(cx: Scope) -> impl IntoView {
     // let delete_recipe_action_dispatch = move || delete_recipe_action.dispatch(id());
 
     view! { cx,
-        <Title text=format!("Rust Recipe Gallery - Recipe {}", get_id())/>
+        <Title text=generate_title/>
         <div class="max-w-2xl rounded-xl w-full mx-auto py-8">
             <Suspense fallback=move || view! (cx, <h1 class="mt-5 text-center p-6 bg-green-400 rounded-lg">"Loading..."</h1>)>
                 {move || async_get_recipe.read(cx).map(|inside_some| {
@@ -277,7 +239,7 @@ pub fn ShowRecipe(cx: Scope) -> impl IntoView {
                                 <button class="mt-6 mr-5 bg-green-300 hover:bg-green-200 p-2 rounded-md" on:click= move |_| delete_recipe_action.dispatch(id())>
                                     "Delete"
                                 </button>
-                                <button class="bg-green-300 hover:bg-green-200 p-2 rounded-md">"Edit"</button>
+                                <a class="bg-green-300 hover:bg-green-200 p-2 rounded-md" href=generate_edit_href>"Edit"</a>
                             ).into_view(cx)
                     }
                 })}
