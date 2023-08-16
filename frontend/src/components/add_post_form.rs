@@ -9,23 +9,23 @@ pub fn AddRecipeForm(
     response: ReadSignal<Result<Option<Recipe>, AppError>>,
     disabled: Signal<bool>,
     #[prop(default = Box::new(|| "".to_string()))] title_fallback: Box<dyn Fn() -> String>,
-    #[prop(default = Box::new(move || "".to_string()))] ingredients_fallback: Box<
-        dyn Fn() -> String,
-    >,
+    #[prop(default = Box::new(|| "".to_string()))] ingredients_fallback: Box<dyn Fn() -> String>,
     #[prop(default = Box::new(|| "".to_string()))] steps_fallback: Box<dyn Fn() -> String>,
 ) -> impl IntoView {
-    let (title, set_title) = create_signal(cx, String::new());
-    let (ingredients, set_ingredients) = create_signal(cx, String::new());
-    let (body, set_body) = create_signal(cx, String::new());
+    let (title, set_title) = create_signal(cx, title_fallback());
+    let (ingredients, set_ingredients) = create_signal(cx, ingredients_fallback());
+    let (body, set_body) = create_signal(cx, steps_fallback());
 
     let dispatch_action = move || action.dispatch((title.get(), ingredients.get(), body.get()));
 
-    let button_is_disabled = Signal::derive(cx, move || {
-        disabled.get()
-            || title.get().is_empty()
-            || ingredients.get().is_empty()
-            || body.get().is_empty()
-    });
+    // let button_is_disabled = Signal::derive(cx, move || {
+    //     disabled.get()
+    //         || title.get().is_empty()
+    //         || ingredients.get().is_empty()
+    //         || body.get().is_empty()
+    // });
+
+    let button_is_disabled = Signal::derive(cx, move || disabled.get());
 
     view! { cx,
         <div class="w-full max-w-lg text-black mx-auto py-8">
@@ -120,7 +120,7 @@ pub fn AddRecipeForm(
                             let val = event_target_value(&ev);
                             set_body.update(|v| *v = val);
                         }
-                    />
+                    >{move || steps_fallback()}</textarea>
                 </div>
                 <div class="text-right">
                     <button class="bg-green-500
@@ -145,10 +145,10 @@ pub fn AddRecipeForm(
                     {move || if response.with(|n| n.as_ref().is_ok()) {
                         if response.with(|n| n.as_ref().unwrap().is_some()) {
                             view! { cx,
-                                <p class="text-green-500">
+                                <a class="text-green-500 hover:underline" href=move || format!("/recipes/{}", response.with(|n| n.as_ref().unwrap().as_ref().unwrap().id.to_string()))>
                                     <strong>"Success! Recipe ID: "</strong>
                                     {response.with(|n| n.as_ref().unwrap().as_ref().unwrap().id.to_string())}
-                                </p>
+                                </a>
                             }.into_view(cx)
                         } else {
                             view! { cx,

@@ -71,14 +71,18 @@ pub async fn patch_recipe_by_id(
     ingredients: String,
     steps: String,
 ) -> Result<Recipe, AppError> {
-    let uuid_id = uuid::Uuid::try_parse(&id)?;
+    let mut map = std::collections::HashMap::new();
+    if !title.is_empty() {
+        map.insert("title", title);
+    }
+    if !ingredients.is_empty() {
+        map.insert("ingredients", ingredients);
+    }
+    if !steps.is_empty() {
+        map.insert("body", steps);
+    }
     let json_response = Request::patch(format!("http://0.0.0.0:7979/api/recipe/{id}").as_str())
-        .json(&Recipe {
-            id: uuid_id,
-            title,
-            ingredients,
-            body: steps,
-        })?
+        .json(&map)?
         .send()
         .await?
         .json::<Recipe>()
