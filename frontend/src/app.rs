@@ -64,9 +64,22 @@ async fn post_recipe(
     Ok(json_response)
 }
 
+#[cfg(not(feature = "ssr"))]
 async fn get_all_recipes() -> Result<Vec<Recipe>, String> {
     let json_response = Request::get("http://0.0.0.0:7979/api/recipe")
         .send()
+        .await
+        .map_err(|e| e.to_string())?
+        .json::<Vec<Recipe>>()
+        .await
+        .map_err(|e| e.to_string())?;
+    Ok(json_response)
+}
+
+// Docs  say to do this to fix an error where the server is attempting to call WASM. wahtever, just use reqwest for both
+#[cfg(feature = "ssr")]
+async fn get_all_recipes() -> Result<Vec<Recipe>, String> {
+    let json_response = reqwest::get("http://0.0.0.0:7979/api/recipe")
         .await
         .map_err(|e| e.to_string())?
         .json::<Vec<Recipe>>()
@@ -139,18 +152,19 @@ pub fn AllRecipes(cx: Scope) -> impl IntoView {
 
     view! { cx,
         <Title text="Rust Recipe Gallery - Recipe Gallery"/>
-        <div>
+        <div class="w-full max-w-xl text-black mx-auto py-8">
             <Suspense
-                fallback=move || view! { cx, <p>"Loading..."</p> }
+                fallback=move || view! { cx, <h1 class="text-center p-6 bg-green-400 rounded-lg">"Loading..."</h1> }
             >
-                <ul>
+                <ul class="flex flex-auto flex-col">
                     {move || async_get_recipes.read(cx).map(|inside| {
                         match inside {
-                            Err(e) => view! ( cx, <p>"Error: " {e.to_string()}</p>).into_view(cx),
+                            Err(e) => view! ( cx, <h1 class="text-center bg-red-200 p-6 rounded-lg">"Error: " {e.to_string()}</h1>).into_view(cx),
                             Ok(recipe_list) => recipe_list.iter().map(|recipe| {
                                 view! ( cx,
-                                    <li>
-                                        <a href=format!("/recipes/{}", recipe.id.to_string())>
+                                    <li class="">
+                                        // <a class="font-medium text-green-600 hover:underline" href=format!("/recipes/{}", recipe.id.to_string())>
+                                        <a class="m-4 p-6 block font-medium border-gray-600 rounded-lg hover:bg-green-200 bg-green-400" href=format!("/recipes/{}", recipe.id.to_string())>
                                             {recipe.title.clone()}
                                         </a>
                                     </li>
@@ -236,9 +250,12 @@ pub fn ShowRecipe(cx: Scope) -> impl IntoView {
             let response = delete_recipe_by_id(recipe_id).await;
             let navigate = leptos_router::use_navigate(cx);
             log!("{response:#?}");
-            match navigate("/recipes", Default::default()) {
-                Err(e) => log!("{e:#?}"),
-                Ok(_) => {}
+            match response {
+                Err(_) => {}
+                Ok(_) => match navigate("/recipes", Default::default()) {
+                    Err(e) => log!("{e:#?}"),
+                    Ok(_) => {}
+                },
             }
         }
     });
@@ -247,30 +264,28 @@ pub fn ShowRecipe(cx: Scope) -> impl IntoView {
 
     view! { cx,
         <Title text=format!("Rust Recipe Gallery - Recipe {}", get_id())/>
-        <div>
-            <Suspense fallback=move || view! (cx, <p>"Loading..."</p>)>
+        <div class="max-w-2xl rounded-xl w-full mx-auto py-8">
+            <Suspense fallback=move || view! (cx, <h1 class="mt-5 text-center p-6 bg-green-400 rounded-lg">"Loading..."</h1>)>
                 {move || async_get_recipe.read(cx).map(|inside_some| {
                     match inside_some {
-                        Err(e) => view! ( cx, <p>"Error: " {e.to_string()}</p>).into_view(cx),
+                        Err(e) => view! ( cx, <h1 class="text-center bg-red-200 p-6 rounded-lg">"Error: " {e.to_string()}</h1>).into_view(cx),
                         Ok(recipe) =>
                             view! ( cx,
-                                <li>
-                                    <div>{recipe.title}</div>
-                                    <div>{recipe.ingredients}</div>
-                                    <div>{recipe.body}</div>
-                                    <button on:click= move |_| delete_recipe_action.dispatch(id())>
-                                        "Delete?"
-                                    </button>
-                                    <button>"Edit?"</button>
-                                </li>
+                                <div><strong>"Title: "</strong>{recipe.title}</div>
+                                <div><strong>"Ingredients: "</strong>{recipe.ingredients}</div>
+                                <div><strong>"Steps: "</strong>{recipe.body}</div>
+                                <button class="mt-6 mr-5 bg-green-300 hover:bg-green-200 p-2 rounded-md" on:click= move |_| delete_recipe_action.dispatch(id())>
+                                    "Delete"
+                                </button>
+                                <button class="bg-green-300 hover:bg-green-200 p-2 rounded-md">"Edit"</button>
                             ).into_view(cx)
                     }
                 })}
             </Suspense>
-            <Suspense fallback=move || view! (cx, <p>"Loading comments..."</p>)>
+            <Suspense fallback=move || view! (cx, <h1 class="text-center p-6 bg-green-300 rounded-lg">"Loading Comments..."</h1>)>
                 {move || async_get_comments_by_recipe_id.read(cx).map(|inside_some| {
                     match inside_some {
-                        Err(e) => view! ( cx, <p>"Error: " {e.to_string()}</p>).into_view(cx),
+                        Err(e) => view! ( cx, <h1 class="text-center bg-red-200 p-6 rounded-lg">"Error: " {e.to_string()}</h1>).into_view(cx),
                         Ok(comments) =>
                             comments.iter().map(|comment| {
                                 view! ( cx,

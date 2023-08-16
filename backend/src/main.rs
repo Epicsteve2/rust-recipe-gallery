@@ -70,7 +70,7 @@ async fn main() -> Result<(), anyhow::Error> {
             CorsLayer::new()
                 // .allow_origin("http://0.0.0.0:7979".parse::<HeaderValue>().unwrap())
                 .allow_origin(tower_http::cors::Any)
-                .allow_methods([Method::GET, Method::POST, Method::PATCH])
+                .allow_methods([Method::GET, Method::POST, Method::PATCH, Method::DELETE])
                 .allow_headers([axum::http::header::CONTENT_TYPE]),
         )
         .layer(
