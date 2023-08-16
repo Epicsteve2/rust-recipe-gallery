@@ -8,9 +8,11 @@ pub fn AddRecipeForm(
     action: Action<(String, String, String), ()>,
     response: ReadSignal<Result<Option<Recipe>, AppError>>,
     disabled: Signal<bool>,
-    #[prop(optional)] title_fallback: String,
-    #[prop(optional)] ingredients_fallback: String,
-    #[prop(optional)] steps_fallback: String,
+    #[prop(default = Box::new(|| "".to_string()))] title_fallback: Box<dyn Fn() -> String>,
+    #[prop(default = Box::new(move || "".to_string()))] ingredients_fallback: Box<
+        dyn Fn() -> String,
+    >,
+    #[prop(default = Box::new(|| "".to_string()))] steps_fallback: Box<dyn Fn() -> String>,
 ) -> impl IntoView {
     let (title, set_title) = create_signal(cx, String::new());
     let (ingredients, set_ingredients) = create_signal(cx, String::new());
@@ -65,7 +67,6 @@ pub fn AddRecipeForm(
                     <label for="ingredients" class="block text-gray-700 text-lg font-bold mb-1">Ingredients</label>
                     <textarea id="ingredients" rows="4" cols="50"
                         required
-                        value=ingredients_fallback
                         class="block
                             p-2.5
                             w-full
@@ -88,7 +89,7 @@ pub fn AddRecipeForm(
                             let val = event_target_value(&ev);
                             set_ingredients.update(|v| *v = val);
                         }
-                    />
+                    >{move || ingredients_fallback()}</textarea>
                 </div>
                 <div class="mb-5">
                     <label for="steps" class="block text-gray-700 text-lg font-bold mb-1">Steps</label>
@@ -96,7 +97,6 @@ pub fn AddRecipeForm(
                         id="steps"
                         rows="4"
                         required
-                        value=steps_fallback
                         cols="50"
                         class="block
                             p-2.5

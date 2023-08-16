@@ -128,6 +128,36 @@ pub fn EditRecipe(cx: Scope) -> impl IntoView {
         move || params().get("id").cloned().unwrap_or_default(),
         |id| async move { get_recipe_by_id(id).await },
     );
+    // async_get_recipe.
+    let get_title = move || match async_get_recipe.read(cx).map(|inside_some| {
+        log!("{:#?}", inside_some);
+        match inside_some {
+            Err(_) => "".to_string(),
+            Ok(recipe) => recipe.title,
+        }
+    }) {
+        None => "".to_string(),
+        Some(string_inside) => string_inside,
+    };
+    let get_ingredients = move || match async_get_recipe.with(cx, |inside_some| match inside_some {
+        Err(_) => "".to_string(),
+        Ok(recipe) => recipe.ingredients.clone(),
+    }) {
+        None => "".to_string(),
+        Some(string_inside) => string_inside,
+    };
+    let get_steps = move || match async_get_recipe.read(cx).map(|inside_some| {
+        log!("{:#?}", inside_some);
+        match inside_some {
+            Err(_) => "".to_string(),
+            Ok(recipe) => recipe.body,
+        }
+    }) {
+        None => "".to_string(),
+        Some(string_inside) => string_inside,
+    };
+
+    // let (title, set_title) = create_signal(cx, "");
 
     let (patch_response, set_response) = create_signal(cx, Ok(None::<Recipe>));
     let (wait_for_response, set_wait_for_response) = create_signal(cx, false);
@@ -154,20 +184,14 @@ pub fn EditRecipe(cx: Scope) -> impl IntoView {
     view! { cx,
         <Title text="Rust Recipe Gallery - Edit Recipe"/>
         <Suspense fallback=move || view! (cx, <h1 class="mt-5 text-center p-6 bg-green-400 rounded-lg">"Loading..."</h1>)>
+            // <p>"Title: " {get_title}</p>
             <AddRecipeForm
                 action=patch_recipe_action
                 response=patch_response
                 disabled
-                title_fallback=match async_get_recipe.read(cx).map(|inside_some| {
-                    log!("{:#?}", inside_some);
-                    match inside_some {
-                        Err(_) => "".to_string(),
-                        Ok(recipe) => recipe.title
-                    }
-                }) {
-                    None => "".to_string(),
-                    Some(string_inside) => string_inside
-                }
+                title_fallback=Box::new(get_title)
+                ingredients_fallback=Box::new(get_ingredients)
+                steps_fallback=Box::new(get_steps)
             />
         </Suspense>
     }
@@ -239,7 +263,7 @@ pub fn ShowRecipe(cx: Scope) -> impl IntoView {
                                 <button class="mt-6 mr-5 bg-green-300 hover:bg-green-200 p-2 rounded-md" on:click= move |_| delete_recipe_action.dispatch(id())>
                                     "Delete"
                                 </button>
-                                <a class="bg-green-300 hover:bg-green-200 p-2 rounded-md" href=generate_edit_href>"Edit"</a>
+                                <A class="bg-green-300 hover:bg-green-200 p-2 rounded-md" href=generate_edit_href>"Edit"</A>
                             ).into_view(cx)
                     }
                 })}
