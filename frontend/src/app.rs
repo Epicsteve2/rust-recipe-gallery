@@ -192,6 +192,7 @@ pub fn EditRecipe(cx: Scope) -> impl IntoView {
                 title_fallback=Box::new(get_title)
                 ingredients_fallback=Box::new(get_ingredients)
                 steps_fallback=Box::new(get_steps)
+                action_name="Edit".to_string()
             />
         </Suspense>
     }

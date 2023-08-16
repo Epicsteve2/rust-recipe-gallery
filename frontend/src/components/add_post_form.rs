@@ -11,6 +11,7 @@ pub fn AddRecipeForm(
     #[prop(default = Box::new(|| "".to_string()))] title_fallback: Box<dyn Fn() -> String>,
     #[prop(default = Box::new(|| "".to_string()))] ingredients_fallback: Box<dyn Fn() -> String>,
     #[prop(default = Box::new(|| "".to_string()))] steps_fallback: Box<dyn Fn() -> String>,
+    #[prop(default = "Create".to_string())] action_name: String,
 ) -> impl IntoView {
     let (title, set_title) = create_signal(cx, title_fallback());
     let (ingredients, set_ingredients) = create_signal(cx, ingredients_fallback());
@@ -31,7 +32,7 @@ pub fn AddRecipeForm(
         <div class="w-full max-w-lg text-black mx-auto py-8">
             <form class="bg-white shadow-md rounded px-8 pt-6 pb-5 mb-2" on:submit=|ev| ev.prevent_default()>
                 <div class="w-full text-black text-2xl pb-4 text-center">
-                    <h1>"Create new recipe"</h1>
+                    <h1>{action_name.clone()} " recipe"</h1>
                 </div>
                 <div class="mb-5">
                     <label for="title" class="block text-gray-700 text-lg font-bold mb-1">"Title"</label>
@@ -137,7 +138,7 @@ pub fn AddRecipeForm(
                         prop:disabled=move || button_is_disabled.get()
                         on:click=move |_| {dispatch_action();}
                     >
-                        "Create Recipe"
+                        {action_name.clone()} " Recipe"
                     </button>
                 </div>
                 <div class="pt-2">
