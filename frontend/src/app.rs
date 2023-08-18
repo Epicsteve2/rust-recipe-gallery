@@ -22,6 +22,7 @@ pub fn App(cx: Scope) -> impl IntoView {
             <Router>
                 <Routes>
                     <Route path="/" view=  move |cx| view! { cx, <Home/> }/>
+                    // can use nesting, but nah too lazy
                     <Route path="/recipes" view=  move |cx| view! { cx, <AllRecipes/> }/>
                     <Route path="/recipes/add" view=  move |cx| view! { cx, <AddRecipe/> }/>
                     <Route path="/recipes/:id" view=  move |cx| view! { cx, <ShowRecipe/> }/>
@@ -123,41 +124,26 @@ pub fn EditRecipe(cx: Scope) -> impl IntoView {
     let id = move || params.with(|params| params.get("id").cloned().unwrap_or_default());
     // let id_string = id();
 
+    let (title, set_title) = create_signal(cx, "".to_string());
+    let (ingredients, set_ingredients) = create_signal(cx, "".to_string());
+    let (body, set_body) = create_signal(cx, "".to_string());
+
     let async_get_recipe = create_resource(
         cx,
         move || params().get("id").cloned().unwrap_or_default(),
-        |id| async move { get_recipe_by_id(id).await },
+        move |id| async move {
+            let result = get_recipe_by_id(id).await;
+            match &result {
+                Err(_) => {}
+                Ok(recipe) => {
+                    set_title.update(|old_title| *old_title = recipe.title.clone());
+                    set_ingredients(recipe.ingredients.clone());
+                    set_body(recipe.body.clone());
+                }
+            }
+            result
+        },
     );
-    // async_get_recipe.
-    let get_title = move || match async_get_recipe.read(cx).map(|inside_some| {
-        log!("{:#?}", inside_some);
-        match inside_some {
-            Err(_) => "".to_string(),
-            Ok(recipe) => recipe.title,
-        }
-    }) {
-        None => "".to_string(),
-        Some(string_inside) => string_inside,
-    };
-    let get_ingredients = move || match async_get_recipe.with(cx, |inside_some| match inside_some {
-        Err(_) => "".to_string(),
-        Ok(recipe) => recipe.ingredients.clone(),
-    }) {
-        None => "".to_string(),
-        Some(string_inside) => string_inside,
-    };
-    let get_steps = move || match async_get_recipe.read(cx).map(|inside_some| {
-        log!("{:#?}", inside_some);
-        match inside_some {
-            Err(_) => "".to_string(),
-            Ok(recipe) => recipe.body,
-        }
-    }) {
-        None => "".to_string(),
-        Some(string_inside) => string_inside,
-    };
-
-    // let (title, set_title) = create_signal(cx, "");
 
     let (patch_response, set_response) = create_signal(cx, Ok(None::<Recipe>));
     let (wait_for_response, set_wait_for_response) = create_signal(cx, false);
@@ -181,6 +167,7 @@ pub fn EditRecipe(cx: Scope) -> impl IntoView {
             }
         },
     );
+
     view! { cx,
         <Title text="Rust Recipe Gallery - Edit Recipe"/>
         <Suspense fallback=move || view! (cx, <h1 class="mt-5 text-center p-6 bg-green-400 rounded-lg">"Loading..."</h1>)>
@@ -189,10 +176,10 @@ pub fn EditRecipe(cx: Scope) -> impl IntoView {
                 action=patch_recipe_action
                 response=patch_response
                 disabled
-                title_fallback=Box::new(get_title)
-                ingredients_fallback=Box::new(get_ingredients)
-                steps_fallback=Box::new(get_steps)
-                action_name="Edit".to_string()
+                title_fallback=title
+                ingredients_fallback=ingredients
+                steps_fallback=body
+                action_name="Edit"
             />
         </Suspense>
     }

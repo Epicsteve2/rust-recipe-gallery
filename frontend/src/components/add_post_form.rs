@@ -8,36 +8,45 @@ pub fn AddRecipeForm(
     action: Action<(String, String, String), ()>,
     response: ReadSignal<Result<Option<Recipe>, AppError>>,
     disabled: Signal<bool>,
-    #[prop(default = Box::new(|| "".to_string()))] title_fallback: Box<dyn Fn() -> String>,
-    #[prop(default = Box::new(|| "".to_string()))] ingredients_fallback: Box<dyn Fn() -> String>,
-    #[prop(default = Box::new(|| "".to_string()))] steps_fallback: Box<dyn Fn() -> String>,
-    #[prop(default = "Create".to_string())] action_name: String,
+    #[prop(default = "".to_string().into(), into)] title_fallback: MaybeSignal<String>,
+    #[prop(default = "".to_string().into(), into)] ingredients_fallback: MaybeSignal<String>,
+    #[prop(default = "".to_string().into(), into)] steps_fallback: MaybeSignal<String>,
+    #[prop(default = "Create")] action_name: &'static str,
 ) -> impl IntoView {
     let (title, set_title) = create_signal(cx, title_fallback());
     let (ingredients, set_ingredients) = create_signal(cx, ingredients_fallback());
     let (body, set_body) = create_signal(cx, steps_fallback());
 
+    // maybe want create effect for title, ingredients, and body?
+
     let dispatch_action = move || action.dispatch((title.get(), ingredients.get(), body.get()));
 
-    // let button_is_disabled = Signal::derive(cx, move || {
-    //     disabled.get()
-    //         || title.get().is_empty()
-    //         || ingredients.get().is_empty()
-    //         || body.get().is_empty()
-    // });
-
-    let button_is_disabled = Signal::derive(cx, move || disabled.get());
+    create_effect(cx, move |_| {
+        // immediately prints "Value: 0" and subscribes to `a`
+        log::debug!("Value: {}, {}, {}", title(), ingredients(), body());
+    });
+    let button_is_disabled = Signal::derive(cx, move || {
+        if action_name == "Create" {
+            disabled.get()
+                || title.get().is_empty()
+                || ingredients.get().is_empty()
+                || body.get().is_empty()
+        } else {
+            disabled.get()
+                || (title.get().is_empty() && ingredients.get().is_empty() && body.get().is_empty())
+        }
+    });
 
     view! { cx,
         <div class="w-full max-w-lg text-black mx-auto py-8">
             <form class="bg-white shadow-md rounded px-8 pt-6 pb-5 mb-2" on:submit=|ev| ev.prevent_default()>
                 <div class="w-full text-black text-2xl pb-4 text-center">
-                    <h1>{action_name.clone()} " recipe"</h1>
+                    <h1>{action_name} " recipe"</h1>
                 </div>
                 <div class="mb-5">
                     <label for="title" class="block text-gray-700 text-lg font-bold mb-1">"Title"</label>
                     <input type="text" id="title" placeholder="Title"
-                        value=title_fallback
+                        // value=title_fallback
                         required
                         class="shadow
                             rounded-lg
@@ -62,6 +71,7 @@ pub fn AddRecipeForm(
                                 let val = event_target_value(&ev);
                                 set_title.update(|v| *v = val);
                             }
+                            prop:value=title_fallback
                     />
                 </div>
                 <div class="mb-5">
@@ -90,7 +100,8 @@ pub fn AddRecipeForm(
                             let val = event_target_value(&ev);
                             set_ingredients.update(|v| *v = val);
                         }
-                    >{move || ingredients_fallback()}</textarea>
+                        // prop:value=ingredients_fallback
+                    >{ingredients_fallback}</textarea>
                 </div>
                 <div class="mb-5">
                     <label for="steps" class="block text-gray-700 text-lg font-bold mb-1">Steps</label>
@@ -121,7 +132,7 @@ pub fn AddRecipeForm(
                             let val = event_target_value(&ev);
                             set_body.update(|v| *v = val);
                         }
-                    >{move || steps_fallback()}</textarea>
+                    >{steps_fallback}</textarea>
                 </div>
                 <div class="text-right">
                     <button class="bg-green-500
@@ -138,7 +149,7 @@ pub fn AddRecipeForm(
                         prop:disabled=move || button_is_disabled.get()
                         on:click=move |_| {dispatch_action();}
                     >
-                        {action_name.clone()} " Recipe"
+                        {action_name} " Recipe"
                     </button>
                 </div>
                 <div class="pt-2">
