@@ -8,6 +8,7 @@ pub fn AddRecipeForm(
     action: Action<(String, String, String), ()>,
     response: ReadSignal<Result<Option<Recipe>, AppError>>,
     disabled: Signal<bool>,
+    // #[prop(optional)] async_data: Resource<String, Result<Recipe, String>>,
     #[prop(default = "".to_string().into(), into)] title_fallback: MaybeSignal<String>,
     #[prop(default = "".to_string().into(), into)] ingredients_fallback: MaybeSignal<String>,
     #[prop(default = "".to_string().into(), into)] steps_fallback: MaybeSignal<String>,
@@ -15,7 +16,7 @@ pub fn AddRecipeForm(
 ) -> impl IntoView {
     let (title, set_title) = create_signal(cx, title_fallback.get_untracked());
     let (ingredients, set_ingredients) = create_signal(cx, ingredients_fallback.get_untracked());
-    let (body, set_body) = create_signal(cx, steps_fallback.get_untracked());
+    let (body, set_body) = create_signal(cx, String::new());
 
     // maybe want create effect for title, ingredients, and body?
 
@@ -71,7 +72,7 @@ pub fn AddRecipeForm(
                                 let val = event_target_value(&ev);
                                 set_title.update(|v| *v = val);
                             }
-                            prop:value=title_fallback
+                            prop:value=move || title_fallback.get_untracked()
                     />
                 </div>
                 <div class="mb-5">
@@ -101,7 +102,7 @@ pub fn AddRecipeForm(
                             set_ingredients.update(|v| *v = val);
                         }
                         // prop:value=ingredients_fallback
-                    >{ingredients_fallback}</textarea>
+                    >{ingredients_fallback.get_untracked()}</textarea>
                 </div>
                 <div class="mb-5">
                     <label for="steps" class="block text-gray-700 text-lg font-bold mb-1">Steps</label>
@@ -132,7 +133,7 @@ pub fn AddRecipeForm(
                             let val = event_target_value(&ev);
                             set_body.update(|v| *v = val);
                         }
-                    >{steps_fallback}</textarea>
+                    >{steps_fallback.get_untracked()}</textarea>
                 </div>
                 <div class="text-right">
                     <button class="bg-green-500

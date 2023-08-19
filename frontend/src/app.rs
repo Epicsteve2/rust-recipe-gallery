@@ -9,87 +9,81 @@ use crate::components::top_nav_bar::TopNavBar;
 use crate::models::Recipe;
 
 // example
-use gloo_timers::future::TimeoutFuture;
-#[component]
-pub fn App(cx: Scope) -> impl IntoView {
-    provide_meta_context(cx);
-
-    view! {
-        cx,
-        <Router>
-            <Routes>
-                <Route path="/:id" view=  move |cx| view! { cx, <Component/> }/>
-            </Routes>
-        </Router>
-    }
-}
-async fn fetch_data(value: String) -> String {
-    // TimeoutFuture::new(1_000).await;
-    value + "!"
-}
-#[component]
-pub fn Component(cx: Scope) -> impl IntoView {
-    let params = use_params_map(cx);
-    let id = move || params.with(|params| params.get("id").cloned().unwrap_or_default());
-
-    let (data, set_data) = create_signal(cx, String::new());
-
-    let async_get_data = create_resource(
-        cx,
-        move || params().get("id").cloned().unwrap_or_default(),
-        move |id| async move {
-            let fetched_data = fetch_data(id).await;
-            set_data(fetched_data.clone());
-            fetched_data
-        },
-    );
-
-    view! {
-        cx,
-        <InnerComponent
-            data=data
-        />
-    }
-}
-#[component]
-pub fn InnerComponent(
-    cx: Scope,
-    #[prop(default = String::new().into(), into)] data: MaybeSignal<String>,
-) -> impl IntoView {
-    view! {
-        cx,
-        <div>
-            <textarea name="input" id="input" cols="30" rows="10">{data}</textarea>
-        </div>
-    }
-}
-
 // #[component]
 // pub fn App(cx: Scope) -> impl IntoView {
 //     provide_meta_context(cx);
 
 //     view! {
 //         cx,
-//         <Stylesheet id="leptos" href="/pkg/rust-recipe-gallery-frontend.css"/>
-//         <Link rel="shortcut icon" type_="image/ico" href="/favicon.ico"/>
-//         <div class="flex flex-col min-h-screen bg-green-50">
-//         <TopNavBar/>
-//         <main class="flex flex-auto">
-//             <Router>
-//                 <Routes>
-//                     <Route path="/" view=  move |cx| view! { cx, <Home/> }/>
-//                     // can use nesting, but nah too lazy
-//                     <Route path="/recipes" view=  move |cx| view! { cx, <AllRecipes/> }/>
-//                     <Route path="/recipes/add" view=  move |cx| view! { cx, <AddRecipe/> }/>
-//                     <Route path="/recipes/:id" view=  move |cx| view! { cx, <ShowRecipe/> }/>
-//                     <Route path="/recipes/:id/edit" view=  move |cx| view! { cx, <EditRecipe/> }/>
-//                 </Routes>
-//             </Router>
-//         </main>
-//         <Footer/>
-//         </div>
+//         <Router>
+//             <Routes>
+//                 <Route path="/:id" view=  move |cx| view! { cx, <Component/> }/>
+//             </Routes>
+//         </Router>
 //     }
 // }
+// async fn fetch_data(value: String) -> String {
+//     // TimeoutFuture::new(1_000).await;
+//     value + "!"
+// }
+// #[component]
+// pub fn Component(cx: Scope) -> impl IntoView {
+//     let params = use_params_map(cx);
+//     let async_get_data = create_resource(
+//         cx,
+//         move || params().get("id").cloned().unwrap_or_default(),
+//         move |id| async move {
+//             let fetched_data = fetch_data(id).await;
+//             fetched_data
+//         },
+//     );
+
+//     view! {
+//         cx,
+//         <Suspense
+//             fallback=move || view! (cx, <p>"Loading..."</p>)
+//         >
+//             <InnerComponent
+//                 data=async_get_data
+//             />
+//         </Suspense>
+//     }
+// }
+// #[component]
+// pub fn InnerComponent(cx: Scope, data: Resource<String, String>) -> impl IntoView {
+//     let (counter, set_counter) = create_signal(cx, 0);
+//     view! {
+//         cx,
+//             <textarea name="input" id="input" cols="30" rows="10">{move || data.read(cx)}</textarea>
+//     }
+// }
+
+#[component]
+pub fn App(cx: Scope) -> impl IntoView {
+    provide_meta_context(cx);
+
+    view! {
+        cx,
+        <Stylesheet id="leptos" href="/pkg/rust-recipe-gallery-frontend.css"/>
+        <Link rel="shortcut icon" type_="image/ico" href="/favicon.ico"/>
+        <div class="flex flex-col min-h-screen bg-green-50">
+        <TopNavBar/>
+        <main class="flex flex-auto">
+            <Router>
+                <Routes>
+                    <Route path="/" view=  move |cx| view! { cx, <Home/> }/>
+                    // can use nesting, but nah too lazy
+                    <Route path="/recipes" view=  move |cx| view! { cx, <AllRecipes/> }/>
+                    <Route path="/recipes/add" view=  move |cx| view! { cx, <AddRecipe/> }/>
+                    <Route path="/recipes/:id" view=  move |cx| view! { cx, <ShowRecipe/> }/>
+                    <Route path="/recipes/:id/edit" view=  move |cx| view! { cx, <EditRecipe/> }/>
+                </Routes>
+            </Router>
+        </main>
+        <Footer/>
+        </div>
+    }
+}
 
 #[component]
 fn Home(cx: Scope) -> impl IntoView {
@@ -178,7 +172,6 @@ pub fn AddRecipe(cx: Scope) -> impl IntoView {
 pub fn EditRecipe(cx: Scope) -> impl IntoView {
     let params = use_params_map(cx);
     let id = move || params.with(|params| params.get("id").cloned().unwrap_or_default());
-    // let id_string = id();
 
     let (title, set_title) = create_signal(cx, "".to_string());
     let (ingredients, set_ingredients) = create_signal(cx, "".to_string());
@@ -189,14 +182,7 @@ pub fn EditRecipe(cx: Scope) -> impl IntoView {
         move || params().get("id").cloned().unwrap_or_default(),
         move |id| async move {
             let result = get_recipe_by_id(id).await;
-            match &result {
-                Err(_) => {}
-                Ok(recipe) => {
-                    set_title.update(|old_title| *old_title = recipe.title.clone());
-                    set_ingredients(recipe.ingredients.clone());
-                    set_body(recipe.body.clone());
-                }
-            }
+            log!("{result:#?}");
             result
         },
     );
@@ -224,6 +210,33 @@ pub fn EditRecipe(cx: Scope) -> impl IntoView {
         },
     );
 
+    let get_title = Signal::derive(cx, move || {
+        match async_get_recipe.read(cx) {
+            None => String::new(),
+            Some(inside_some) => match inside_some {
+                Err(_) => String::new(),
+                Ok(recipe) => recipe.title.clone(),
+            },
+        }
+        // .map(|inside_option| match inside_option {
+        //     Err(_) => String::new(),
+        //     Ok(recipe) => recipe.title.clone(),
+        // })
+    });
+    let get_ingredients = Signal::derive(cx, move || {
+        match async_get_recipe.read(cx) {
+            None => String::new(),
+            Some(inside_some) => match inside_some {
+                Err(_) => String::new(),
+                Ok(recipe) => recipe.ingredients.clone(),
+            },
+        }
+        // .map(|inside_option| match inside_option {
+        //     Err(_) => String::new(),
+        //     Ok(recipe) => recipe.title.clone(),
+        // })
+    });
+
     view! { cx,
         <Title text="Rust Recipe Gallery - Edit Recipe"/>
         <Suspense fallback=move || view! (cx, <h1 class="mt-5 text-center p-6 bg-green-400 rounded-lg">"Loading..."</h1>)>
@@ -232,8 +245,8 @@ pub fn EditRecipe(cx: Scope) -> impl IntoView {
                 action=patch_recipe_action
                 response=patch_response
                 disabled
-                title_fallback=title
-                ingredients_fallback=ingredients
+                title_fallback=get_title
+                ingredients_fallback=get_ingredients
                 steps_fallback=body
                 action_name="Edit"
             />
