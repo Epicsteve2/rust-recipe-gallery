@@ -8,32 +8,88 @@ use crate::components::footer::Footer;
 use crate::components::top_nav_bar::TopNavBar;
 use crate::models::Recipe;
 
+// example
+use gloo_timers::future::TimeoutFuture;
 #[component]
 pub fn App(cx: Scope) -> impl IntoView {
     provide_meta_context(cx);
 
     view! {
         cx,
-        <Stylesheet id="leptos" href="/pkg/rust-recipe-gallery-frontend.css"/>
-        <Link rel="shortcut icon" type_="image/ico" href="/favicon.ico"/>
-        <div class="flex flex-col min-h-screen bg-green-50">
-        <TopNavBar/>
-        <main class="flex flex-auto">
-            <Router>
-                <Routes>
-                    <Route path="/" view=  move |cx| view! { cx, <Home/> }/>
-                    // can use nesting, but nah too lazy
-                    <Route path="/recipes" view=  move |cx| view! { cx, <AllRecipes/> }/>
-                    <Route path="/recipes/add" view=  move |cx| view! { cx, <AddRecipe/> }/>
-                    <Route path="/recipes/:id" view=  move |cx| view! { cx, <ShowRecipe/> }/>
-                    <Route path="/recipes/:id/edit" view=  move |cx| view! { cx, <EditRecipe/> }/>
-                </Routes>
-            </Router>
-        </main>
-        <Footer/>
+        <Router>
+            <Routes>
+                <Route path="/:id" view=  move |cx| view! { cx, <Component/> }/>
+            </Routes>
+        </Router>
+    }
+}
+async fn fetch_data(value: String) -> String {
+    // TimeoutFuture::new(1_000).await;
+    value + "!"
+}
+#[component]
+pub fn Component(cx: Scope) -> impl IntoView {
+    let params = use_params_map(cx);
+    let id = move || params.with(|params| params.get("id").cloned().unwrap_or_default());
+
+    let (data, set_data) = create_signal(cx, String::new());
+
+    let async_get_data = create_resource(
+        cx,
+        move || params().get("id").cloned().unwrap_or_default(),
+        move |id| async move {
+            let fetched_data = fetch_data(id).await;
+            set_data(fetched_data.clone());
+            fetched_data
+        },
+    );
+
+    view! {
+        cx,
+        <InnerComponent
+            data=data
+        />
+    }
+}
+#[component]
+pub fn InnerComponent(
+    cx: Scope,
+    #[prop(default = String::new().into(), into)] data: MaybeSignal<String>,
+) -> impl IntoView {
+    view! {
+        cx,
+        <div>
+            <textarea name="input" id="input" cols="30" rows="10">{data}</textarea>
         </div>
     }
 }
+
+// #[component]
+// pub fn App(cx: Scope) -> impl IntoView {
+//     provide_meta_context(cx);
+
+//     view! {
+//         cx,
+//         <Stylesheet id="leptos" href="/pkg/rust-recipe-gallery-frontend.css"/>
+//         <Link rel="shortcut icon" type_="image/ico" href="/favicon.ico"/>
+//         <div class="flex flex-col min-h-screen bg-green-50">
+//         <TopNavBar/>
+//         <main class="flex flex-auto">
+//             <Router>
+//                 <Routes>
+//                     <Route path="/" view=  move |cx| view! { cx, <Home/> }/>
+//                     // can use nesting, but nah too lazy
+//                     <Route path="/recipes" view=  move |cx| view! { cx, <AllRecipes/> }/>
+//                     <Route path="/recipes/add" view=  move |cx| view! { cx, <AddRecipe/> }/>
+//                     <Route path="/recipes/:id" view=  move |cx| view! { cx, <ShowRecipe/> }/>
+//                     <Route path="/recipes/:id/edit" view=  move |cx| view! { cx, <EditRecipe/> }/>
+//                 </Routes>
+//             </Router>
+//         </main>
+//         <Footer/>
+//         </div>
+//     }
+// }
 
 #[component]
 fn Home(cx: Scope) -> impl IntoView {

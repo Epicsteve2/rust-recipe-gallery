@@ -13,9 +13,9 @@ pub fn AddRecipeForm(
     #[prop(default = "".to_string().into(), into)] steps_fallback: MaybeSignal<String>,
     #[prop(default = "Create")] action_name: &'static str,
 ) -> impl IntoView {
-    let (title, set_title) = create_signal(cx, title_fallback());
-    let (ingredients, set_ingredients) = create_signal(cx, ingredients_fallback());
-    let (body, set_body) = create_signal(cx, steps_fallback());
+    let (title, set_title) = create_signal(cx, title_fallback.get_untracked());
+    let (ingredients, set_ingredients) = create_signal(cx, ingredients_fallback.get_untracked());
+    let (body, set_body) = create_signal(cx, steps_fallback.get_untracked());
 
     // maybe want create effect for title, ingredients, and body?
 
