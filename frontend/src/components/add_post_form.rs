@@ -72,7 +72,9 @@ pub fn AddRecipeForm(
                                 let val = event_target_value(&ev);
                                 set_title.update(|v| *v = val);
                             }
-                            prop:value=move || title_fallback.get_untracked()
+                            value=title_fallback
+                            // value:prop=title_fallback.get_untracked()
+                            // idk the difference. but, value without :prop makes server side render better
                     />
                 </div>
                 <div class="mb-5">
@@ -102,6 +104,7 @@ pub fn AddRecipeForm(
                             set_ingredients.update(|v| *v = val);
                         }
                         // prop:value=ingredients_fallback
+                        // ok, so text area cannot be reactive. this is kinda dumb, cuz then this is impossble to implement, I think.
                     >{ingredients_fallback.get_untracked()}</textarea>
                 </div>
                 <div class="mb-5">
