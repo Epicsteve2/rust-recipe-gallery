@@ -173,10 +173,6 @@ pub fn EditRecipe(cx: Scope) -> impl IntoView {
     let params = use_params_map(cx);
     let id = move || params.with(|params| params.get("id").cloned().unwrap_or_default());
 
-    let (title, set_title) = create_signal(cx, "".to_string());
-    let (ingredients, set_ingredients) = create_signal(cx, "".to_string());
-    let (body, set_body) = create_signal(cx, "".to_string());
-
     let async_get_recipe = create_resource(
         cx,
         move || params().get("id").cloned().unwrap_or_default(),
@@ -223,31 +219,31 @@ pub fn EditRecipe(cx: Scope) -> impl IntoView {
         //     Ok(recipe) => recipe.title.clone(),
         // })
     });
-    let get_ingredients = Signal::derive(cx, move || {
-        match async_get_recipe.read(cx) {
-            None => String::new(),
-            Some(inside_some) => match inside_some {
-                Err(_) => String::new(),
-                Ok(recipe) => recipe.ingredients.clone(),
-            },
-        }
-        // .map(|inside_option| match inside_option {
-        //     Err(_) => String::new(),
-        //     Ok(recipe) => recipe.title.clone(),
-        // })
+    let get_ingredients = Signal::derive(cx, move || match async_get_recipe.read(cx) {
+        None => String::new(),
+        Some(inside_some) => match inside_some {
+            Err(_) => String::new(),
+            Ok(recipe) => recipe.ingredients.clone(),
+        },
+    });
+    let get_steps = Signal::derive(cx, move || match async_get_recipe.read(cx) {
+        None => String::new(),
+        Some(inside_some) => match inside_some {
+            Err(_) => String::new(),
+            Ok(recipe) => recipe.body.clone(),
+        },
     });
 
     view! { cx,
         <Title text="Rust Recipe Gallery - Edit Recipe"/>
         <Suspense fallback=move || view! (cx, <h1 class="mt-5 text-center p-6 bg-green-400 rounded-lg">"Loading..."</h1>)>
-            // <p>"Title: " {get_title}</p>
             <AddRecipeForm
                 action=patch_recipe_action
                 response=patch_response
                 disabled
                 title_fallback=get_title
                 ingredients_fallback=get_ingredients
-                steps_fallback=body
+                steps_fallback=get_steps
                 action_name="Edit"
             />
         </Suspense>

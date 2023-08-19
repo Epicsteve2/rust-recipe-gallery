@@ -8,7 +8,6 @@ pub fn AddRecipeForm(
     action: Action<(String, String, String), ()>,
     response: ReadSignal<Result<Option<Recipe>, AppError>>,
     disabled: Signal<bool>,
-    // #[prop(optional)] async_data: Resource<String, Result<Recipe, String>>,
     #[prop(default = "".to_string().into(), into)] title_fallback: MaybeSignal<String>,
     #[prop(default = "".to_string().into(), into)] ingredients_fallback: MaybeSignal<String>,
     #[prop(default = "".to_string().into(), into)] steps_fallback: MaybeSignal<String>,
@@ -16,7 +15,7 @@ pub fn AddRecipeForm(
 ) -> impl IntoView {
     let (title, set_title) = create_signal(cx, title_fallback.get_untracked());
     let (ingredients, set_ingredients) = create_signal(cx, ingredients_fallback.get_untracked());
-    let (body, set_body) = create_signal(cx, String::new());
+    let (body, set_body) = create_signal(cx, steps_fallback.get_untracked());
 
     // maybe want create effect for title, ingredients, and body?
 
@@ -105,7 +104,9 @@ pub fn AddRecipeForm(
                         }
                         // prop:value=ingredients_fallback
                         // ok, so text area cannot be reactive. this is kinda dumb, cuz then this is impossble to implement, I think.
-                    >{ingredients_fallback.get_untracked()}</textarea>
+                    // >{ingredients_fallback.get_untracked()}</textarea>
+                    // bugged on server side render
+                    >{ingredients_fallback}</textarea>
                 </div>
                 <div class="mb-5">
                     <label for="steps" class="block text-gray-700 text-lg font-bold mb-1">Steps</label>
@@ -136,7 +137,8 @@ pub fn AddRecipeForm(
                             let val = event_target_value(&ev);
                             set_body.update(|v| *v = val);
                         }
-                    >{steps_fallback.get_untracked()}</textarea>
+                    // bugged on server side render
+                    >{steps_fallback}</textarea>
                 </div>
                 <div class="text-right">
                     <button class="bg-green-500
