@@ -1,5 +1,6 @@
 # Rust Recipe Gallery
 Learning Rust by using it to write a full-stack application
+![](screenshot.png)
 
 ## Opinions
 ### Backend
