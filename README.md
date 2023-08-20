@@ -1,3 +1,34 @@
+# Rust Recipe Gallery
+Learning Rust by using it to write a full-stack application.
+
+## Opinions
+### Backend
+- **Framework**: Auxm
+    - It's really awesome
+    - Really modular, with layers, state, logging, and more
+    - The type system is really cool too
+    - Docs are ok
+- **Database Managment System**: Diesel
+    - It's meh
+    - I've found I had more issues than it had solved
+    - Docs are not great
+    - Probably should've used `sqlx` instead
+- **Database**: Postgres
+    - An array of non-null strings is not possible, bruh
+    - It's cool though. I see why so many people use it
+
+### Frontend
+- **Framework**: Leptos
+    - Very mixed feelings
+    - I really like the philosophy of a fine-grained reactive framework
+    - It takes 15 seconds to compile... Very bad dev experience
+    - the `view!` macro is great, but doesn't have intellisense
+    - also errors are wonky in the macro
+    - SSR gets kinda complicated, espcially with the `cfg!` options and `Cargo.toml`. Also SSR bugs are quite hard to fix, but maybe this isn't solely a Leptos problem
+    -
+- **CSS**: Tailwind CSS
+    - I really like it, I see why everyone recommends it as well
+
 ```bash
 docker exec --interactive --tty rust-recipe-gallery-postgres bash
 psql --username=postgres --dbname=recipe-gallery
@@ -13,6 +44,9 @@ cargo leptos watch --hot-reload
 # I think this is faster
 cd frontend/
 cargo leptos watch
+
+cd backend/
+cargo run
 
 trunk -v serve --features hydrate
 

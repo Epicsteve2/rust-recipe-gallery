@@ -857,18 +857,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "gloo-timers"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bbb143cf96099802033e0d4f4963b19fd2e0b728bcf076cd9cf7f6634f092994"
-dependencies = [
- "futures-channel",
- "futures-core",
- "js-sys",
- "wasm-bindgen",
-]
-
-[[package]]
 name = "gloo-utils"
 version = "0.1.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2131,7 +2119,6 @@ dependencies = [
  "console_error_panic_hook",
  "console_log",
  "gloo-net 0.4.0",
- "gloo-timers",
  "http",
  "leptos",
  "leptos_axum",
@@ -2146,7 +2133,6 @@ dependencies = [
  "tokio",
  "tower",
  "tower-http",
- "tracing",
  "uuid",
  "validator",
  "wasm-bindgen",
