@@ -1,5 +1,5 @@
 # Rust Recipe Gallery
-Learning Rust by using it to write a full-stack application
+Learning Rust by writing a full-stack application
 ![](screenshot.png)
 
 ## Opinions
@@ -37,7 +37,7 @@ Learning Rust by using it to write a full-stack application
 
 ## Setup
 
-I recommend using the devcontainer to build and run. Otherwise,\
+I recommend using the devcontainer to go directly to the build commands. Otherwise,\
 Dependencies
 - Docker
 - Node
@@ -58,12 +58,12 @@ cd frontend/
 cargo leptos serve --release
 
 # Open a new terminal
-docker-compose up --detach db # don't forget to down when you're done
+docker-compose up --detach db # Only needed if not using devcontainer
 cd backend/
 diesel migration run
 cargo run --release
 
-# Optional, test (in a new terminal)
+# Optional, run tests (in a new terminal)
 cd frontend/end2end/
 npx playwright test
 ```
@@ -75,13 +75,13 @@ docker exec --interactive --tty rust-recipe-gallery-postgres bash
 psql --username=postgres --dbname=recipe-gallery
 
 # diesel commands
-diesel migration redo
 diesel migration run
 diesel database reset
 
 # Frontend
 cd frontend/
 tailwindcss --input ./input.css --output ./style/tailwind.css --watch
+# new terminal
 cargo leptos watch
 # run client-side rendering only
 trunk -v serve --features hydrate
