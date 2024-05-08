@@ -4,7 +4,7 @@ WORKDIR /rust-recipe-gallery
 RUN cargo new rust-recipe-gallery-backend && cargo new rust-recipe-gallery-frontend
 
 # I think this can be optimized, running cargo build --release still looks at toolchain and target stuff...
-RUN rustup toolchain install --profile=minimal nightly-2023-08-08 && rustup target add --toolchain nightly-2023-08-08 wasm32-unknown-unknown
+RUN rustup toolchain install --profile=minimal stable  && rustup target add --toolchain stable wasm32-unknown-unknown
 COPY ./Cargo.toml ./Cargo.lock ./rust-toolchain.toml ./
 COPY ./rust-recipe-gallery-backend/Cargo.toml ./rust-recipe-gallery-backend/
 COPY ./rust-recipe-gallery-frontend/Cargo.toml ./rust-recipe-gallery-frontend/

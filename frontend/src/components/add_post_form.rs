@@ -4,7 +4,6 @@ use crate::models::{AppError, Recipe};
 
 #[component]
 pub fn AddRecipeForm(
-    cx: Scope,
     action: Action<(String, String, String), ()>,
     response: ReadSignal<Result<Option<Recipe>, AppError>>,
     disabled: Signal<bool>,
@@ -13,19 +12,24 @@ pub fn AddRecipeForm(
     #[prop(default = "".to_string().into(), into)] steps_fallback: MaybeSignal<String>,
     #[prop(default = "Create")] action_name: &'static str,
 ) -> impl IntoView {
-    let (title, set_title) = create_signal(cx, title_fallback.get_untracked());
-    let (ingredients, set_ingredients) = create_signal(cx, ingredients_fallback.get_untracked());
-    let (body, set_body) = create_signal(cx, steps_fallback.get_untracked());
+    let (title, set_title) = create_signal(title_fallback.get_untracked());
+    let (ingredients, set_ingredients) = create_signal(ingredients_fallback.get_untracked());
+    let (body, set_body) = create_signal(steps_fallback.get_untracked());
 
     // maybe want create effect for title, ingredients, and body?
 
     let dispatch_action = move || action.dispatch((title.get(), ingredients.get(), body.get()));
 
-    create_effect(cx, move |_| {
+    create_effect(move |_| {
         // immediately prints "Value: 0" and subscribes to `a`
-        log::debug!("Value: {}, {}, {}", title(), ingredients(), body());
+        log::debug!(
+            "Value: {}, {}, {}",
+            title.get(),
+            ingredients.get(),
+            body.get()
+        );
     });
-    let button_is_disabled = Signal::derive(cx, move || {
+    let button_is_disabled = Signal::derive(move || {
         if action_name == "Create" {
             disabled.get()
                 || title.get().is_empty()
@@ -37,7 +41,7 @@ pub fn AddRecipeForm(
         }
     });
 
-    view! { cx,
+    view! {
         <div class="w-full max-w-lg text-black mx-auto py-8">
             <form class="bg-white shadow-md rounded px-8 pt-6 pb-5 mb-2" on:submit=|ev| ev.prevent_default()>
                 <div class="w-full text-black text-2xl pb-4 text-center">
@@ -162,24 +166,24 @@ pub fn AddRecipeForm(
                     // I am doing this very incorrectly
                     {move || if response.with(|n| n.as_ref().is_ok()) {
                         if response.with(|n| n.as_ref().unwrap().is_some()) {
-                            view! { cx,
+                            view! {
                                 <a class="text-green-500 hover:underline" href=move || format!("/recipes/{}", response.with(|n| n.as_ref().unwrap().as_ref().unwrap().id.to_string()))>
                                     <strong>"Success! Recipe ID: "</strong>
                                     {response.with(|n| n.as_ref().unwrap().as_ref().unwrap().id.to_string())}
                                 </a>
-                            }.into_view(cx)
+                            }.into_view()
                         } else {
-                            view! { cx,
+                            view! {
                                 <></>
-                            }.into_view(cx)
+                            }.into_view()
                         }
                     } else {
-                        view! { cx,
+                        view! {
                             <p class="text-red-500">
                                     <strong>"Error: "</strong>
                                     {response.with(|n| n.as_ref().unwrap_err().to_string())}
                             </p>
-                        }.into_view(cx)
+                        }.into_view()
                     }}
                 </div>
             </form>

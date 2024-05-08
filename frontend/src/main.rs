@@ -18,20 +18,20 @@ async fn main() {
     let addr = conf.leptos_options.site_addr;
     let leptos_options = conf.leptos_options;
     // Generate the list of routes in your Leptos App
-    let routes = generate_route_list(|cx| view! { cx, <App/> }).await;
+    let routes = generate_route_list(|| view! {  <App/> });
 
     // build our application with a route
     let app = Router::new()
         .route("/api/*fn_name", post(leptos_axum::handle_server_fns))
-        .leptos_routes(&leptos_options, routes, |cx| view! { cx, <App/> })
+        .leptos_routes(&leptos_options, routes, || view! {  <App/> })
         .fallback(file_and_error_handler)
         .with_state(leptos_options);
 
     // run our app with hyper
     // `axum::Server` is a re-export of `hyper::Server`
     info!("listening on http://{}", &addr);
-    axum::Server::bind(&addr)
-        .serve(app.into_make_service())
+    let listener = tokio::net::TcpListener::bind(&addr).await.unwrap();
+    axum::serve(listener, app.into_make_service())
         .await
         .unwrap();
 }
@@ -41,5 +41,5 @@ pub fn main() {
     // no client-side main function
     // unless we want this to work with e.g., Trunk for a purely client-side app
     // see lib.rs for hydration function instead
-    rust_recipe_gallery_frontend::hydrate();
+    // rust_recipe_gallery_frontend::hydrate();
 }

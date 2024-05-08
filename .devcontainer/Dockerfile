@@ -1,15 +1,16 @@
 # a lot of stages b/c of compile times...
-FROM mcr.microsoft.com/devcontainers/rust:1-1-bullseye as diesel
-RUN cargo install diesel_cli --version 2.1.0
-# FROM mcr.microsoft.com/devcontainers/rust:1-1-bullseye as leptos
+# TODO: Update to bookwork soon?
+FROM mcr.microsoft.com/devcontainers/rust:1.0.11-bullseye as diesel
+RUN cargo install diesel_cli --version 2.1.1
+# FROM mcr.microsoft.com/devcontainers/rust:1.0.11-bullseye as leptos
 # RUN cargo install cargo-leptos --version 0.1.11
-# FROM mcr.microsoft.com/devcontainers/rust:1-1-bullseye as trunk
+# FROM mcr.microsoft.com/devcontainers/rust:1.0.11-bullseye as trunk
 # RUN cargo install trunk --version 0.17.3
 
-FROM mcr.microsoft.com/devcontainers/rust:1-1-bullseye as cargo-leptos
+FROM mcr.microsoft.com/devcontainers/rust:1.0.11-bullseye as cargo-leptos
 ADD https://github.com/cargo-bins/cargo-binstall/releases/latest/download/cargo-binstall-x86_64-unknown-linux-musl.tgz /
 RUN tar -xvf cargo-binstall-x86_64-unknown-linux-musl.tgz && cp cargo-binstall /usr/local/cargo/bin && \
-  cargo binstall --no-track --no-confirm cargo-leptos --version 0.1.11
+  cargo binstall --no-track --no-confirm cargo-leptos --version 0.2.17
 # cargo binstall --no-track --no-confirm trunk --version 0.17.3 # missing glibc
 # cargo binstall --no-track --no-confirm diesel_cli --version 2.1.0 && \ # doesn't work... doesn't have binaries, or isn't compiled correctly
 # RUN cargo install wasm-pack --version 0.12.1 # nah
@@ -28,7 +29,7 @@ RUN tar -xvf cargo-binstall-x86_64-unknown-linux-musl.tgz && cp cargo-binstall /
 # cargo install cargo-generate --version 0.18.3
 # /usr/local/cargo/bin/cargo-generate
 
-FROM mcr.microsoft.com/devcontainers/rust:1-1-bullseye as node
+FROM mcr.microsoft.com/devcontainers/rust:1.0.11-bullseye as node
 
 # TODO do this? https://stackoverflow.com/a/66390227 https://github.com/nodejs/help/wiki/Installation
 # nvm nah
@@ -43,30 +44,25 @@ FROM mcr.microsoft.com/devcontainers/rust:1-1-bullseye as node
 # ENV PATH $NODE_HOME/bin:$PATH
 USER vscode
 SHELL ["/bin/bash", "--login", "-c"]
-RUN curl --silent --output - https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.4/install.sh | bash && \
+RUN curl --silent --output - https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash && \
   source /home/vscode/.nvm/nvm.sh && \
-  nvm install 18.17.1 && \
+  nvm install v20.13.0 && \
   rm -rf /home/vscode/.nvm/.cache/*
 
 RUN source /home/vscode/.nvm/nvm.sh && \
-  npm install --global @playwright/test@1.36.2 && \
+  npm install --global @playwright/test@1.44.0 && \
   playwright install && \
   npm uninstall --global @playwright/test && \
   npm cache clean --force
 
 RUN source /home/vscode/.nvm/nvm.sh && \
-  npm install --global tailwindcss@3.3.3 sass@1.64.2 && \
+  npm install --global tailwindcss@3.3.3 sass@1.77.0 && \
   npm cache clean --force
 
-FROM mcr.microsoft.com/devcontainers/rust:1-1-bullseye as rust-nightly
-RUN rustup toolchain install nightly-2023-08-08 --allow-downgrade \
-  --component rustfmt \
-  --component clippy \
-  --component rust-src && \
-  rustup target add --toolchain nightly-2023-08-08 wasm32-unknown-unknown && \
-  rustup default nightly-2023-08-08
+FROM mcr.microsoft.com/devcontainers/rust:1.0.11-bullseye as rust-nightly
+RUN rustup target add --toolchain 1.77.2 wasm32-unknown-unknown
 
-FROM mcr.microsoft.com/devcontainers/rust:1-1-bullseye
+FROM mcr.microsoft.com/devcontainers/rust:1.0.11-bullseye
 # playwright dependenecies
 # doesn't work for debian 12 aka bookworm
 # to get dependencies, run `playwright install-deps --dry-run`
@@ -160,14 +156,14 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
   rm -rf /var/lib/apt/lists/*
 
 USER vscode
-# RUN rustup toolchain install nightly-2023-08-08 --allow-downgrade --component rustfmt --component clippy --component rust-src && \
-#   rustup target add --toolchain nightly-2023-08-08 wasm32-unknown-unknown && \
-#   rustup default nightly-2023-08-08
+# RUN rustup toolchain install 1.77.2 --allow-downgrade --component rustfmt --component clippy --component rust-src && \
+#   rustup target add --toolchain 1.77.2 wasm32-unknown-unknown && \
+#   rustup default 1.77.2
 
 COPY --from=node --chown=vscode:vscode /home/vscode/.cache /home/vscode/.cache/
 ## this increased file size by like 600 mb... i really don't know why. my guess is that i'm adding more than 600mb of files. namely, 1.2gb because of previous files?
-COPY --from=rust-nightly --chown=vscode:vscode /usr/local/rustup/toolchains/nightly-2023-08-08-x86_64-unknown-linux-gnu /usr/local/rustup/toolchains/nightly-2023-08-08-x86_64-unknown-linux-gnu
-COPY --from=rust-nightly --chown=vscode:vscode /usr/local/rustup/update-hashes/nightly-2023-08-08-x86_64-unknown-linux-gnu /usr/local/rustup/update-hashes/
+COPY --from=rust-nightly --chown=vscode:vscode /usr/local/rustup/toolchains/1.77.2-x86_64-unknown-linux-gnu /usr/local/rustup/toolchains/1.77.2-x86_64-unknown-linux-gnu
+COPY --from=rust-nightly --chown=vscode:vscode /usr/local/rustup/update-hashes/1.77.2-x86_64-unknown-linux-gnu /usr/local/rustup/update-hashes/
 COPY --from=rust-nightly --chown=vscode:vscode /usr/local/rustup/settings.toml /usr/local/rustup/
 COPY --from=node --chown=vscode:vscode /home/vscode/.nvm /home/vscode/.nvm/
 COPY --from=diesel /usr/local/cargo/bin/diesel /usr/local/cargo/bin/

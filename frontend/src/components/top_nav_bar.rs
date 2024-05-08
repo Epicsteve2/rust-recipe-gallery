@@ -1,8 +1,8 @@
 use leptos::*;
 
 #[component]
-pub fn TopNavBar(cx: Scope) -> impl IntoView {
-    view! { cx,
+pub fn TopNavBar() -> impl IntoView {
+    view! {
         <nav class="bg-green-600 text-white">
             <div class="max-w-screen-xl flex flex-wrap items-center justify-between mx-auto p-6">
                 <div><a class="font-medium" href="/">"Rust Recipe Gallery"</a></div>
