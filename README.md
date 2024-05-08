@@ -70,6 +70,8 @@ npx playwright test
 
 ## Other commands to run
 ```bash
+docker exec --interactive --tty --workdir /workspaces/rust-recipe-gallery rust-recipe-gallery-devcontainer bash
+
 # run postgresql in the docker container
 docker exec --interactive --tty rust-recipe-gallery-postgres bash
 psql --username=postgres --dbname=recipe-gallery

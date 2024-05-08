@@ -92,10 +92,9 @@ async fn main() -> Result<(), anyhow::Error> {
     // idk how this works lol
     // let addr = SocketAddr::from(([127, 0, 0, 1], port));
     let addr = SocketAddr::from(([0, 0, 0, 0], port));
+    let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
     tracing::info!("listening on http://{addr}");
-    axum::Server::bind(&addr)
-        .serve(app.into_make_service())
-        .await?;
+    axum::serve(listener, app).await?;
 
     Ok(())
 }

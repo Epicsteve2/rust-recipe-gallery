@@ -1,7 +1,7 @@
 use axum::{
     async_trait,
-    extract::{rejection::JsonRejection, FromRequest},
-    http::Request,
+    extract::{rejection::JsonRejection, FromRequest, Request},
+    // http::Request,
     Json,
 };
 
@@ -20,15 +20,14 @@ pub struct InputJson<T>(pub T);
 // - Boilerplate: Requires creating a new extractor for every custom rejection
 // - Complexity: Manually implementing `FromRequest` results on more complex code
 #[async_trait]
-impl<S, B, T> FromRequest<S, B> for InputJson<T>
+impl<S, T> FromRequest<S> for InputJson<T>
 where
-    Json<T>: FromRequest<S, B, Rejection = JsonRejection>,
+    Json<T>: FromRequest<S, Rejection = JsonRejection>,
     S: Send + Sync,
-    B: Send + 'static,
 {
     type Rejection = AppError;
 
-    async fn from_request(req: Request<B>, state: &S) -> Result<Self, Self::Rejection> {
+    async fn from_request(req: Request, state: &S) -> Result<Self, Self::Rejection> {
         let (parts, body) = req.into_parts();
         let req = Request::from_parts(parts, body);
         let json = Json::<T>::from_request(req, state).await?;
