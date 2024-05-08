@@ -59,7 +59,8 @@
       },
       "extensions": [
         "ms-azuretools.vscode-docker",
-        "bradlc.vscode-tailwindcss"
+        "bradlc.vscode-tailwindcss",
+        "ms-playwright.playwright"
       ]
     }
   },
