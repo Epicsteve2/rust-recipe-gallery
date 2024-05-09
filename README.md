@@ -96,6 +96,8 @@ cargo run
 cd end2end
 npm install
 npx playwright test
+# write tests
+npx playwright codegen localhost:3000
 ```
 
 ## SQL queries
