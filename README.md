@@ -98,6 +98,10 @@ npm install
 npx playwright test
 # write tests
 npx playwright codegen localhost:3000
+npx playwright test --grep 'add recipe' --project chromium --trace on
+npx playwright test --grep 'add recipe' --project chromium --headed
+npx playwright show-trace test-results/tests-rust-recipe-gallery-add-recipe-chromium/trace.zip
+/home/vscode/.cache/ms-playwright/chromium-1117/chrome-linux/chrome http://[::1]:9323
 ```
 
 ## SQL queries

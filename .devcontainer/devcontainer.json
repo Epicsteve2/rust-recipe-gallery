@@ -74,7 +74,7 @@
   },
   "mounts": [
     "source=/tmp/.X11-unix,target=/tmp/.X11-unix,type=bind,consistency=cached",
-    "source=${localEnv:XAUTHORITY},target=/tmp/.Xauthority"
+    // "source=${localEnv:XAUTHORITY},target=/tmp/.Xauthority"
     // "/tmp/.X11-unix:/tmp/.X11-unix:rw"
   ],
   // "privileged": true,
