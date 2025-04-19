@@ -1,0 +1,72 @@
+services:
+  nginx:
+    profiles:
+      - donotstart
+    image: nginx:1.27.3-alpine
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    network_mode: host
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  caddy:
+    image: caddy:2.9.1-alpine
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    network_mode: host
+
+  # doesn't work, so whatever. i keep it here for reference
+  caddy-tls:
+    profiles:
+      - donotstart
+    cap_add:
+      - NET_ADMIN
+    build:
+      dockerfile_inline: |
+        FROM caddy:2.9.1-builder-alpine AS builder
+        RUN xcaddy build --with github.com/mholt/caddy-l4/layer4
+
+        FROM caddy:2.9.1-alpine
+        COPY --from=builder /usr/bin/caddy /usr/bin/caddy
+    volumes:
+      - ./Caddyfile-tls.json:/etc/caddy/caddy.json
+      - caddy_data:/data
+      - caddy_config:/config
+    command: ["caddy", "run", "--config", "/etc/caddy/caddy.json"]
+    network_mode: host
+
+  postgres:
+    user: postgres
+    image: postgres:17.2-alpine3.21
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready", "--dbname=${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    env_file:
+      - .env
+    ports:
+      - 5432:5432
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: backend
+    ports:
+      - 3333:3333
+    env_file:
+      - .env
+    environment:
+      POSTGRES_HOST: postgres
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  caddy_data:
+  caddy_config:

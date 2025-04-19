@@ -1,0 +1,23 @@
+(logging) {
+	log {
+		# output file /var/log/caddy/caddy.log
+		format console
+	}
+}
+
+{
+  log {
+    format console
+  }
+}
+
+:4444 {
+	import logging
+	handle_path /api/* {
+		uri strip_prefix /api
+		reverse_proxy localhost:3333
+	}
+	handle {
+		reverse_proxy localhost:3000
+	}
+}
