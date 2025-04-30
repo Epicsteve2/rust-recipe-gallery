@@ -1,9 +1,10 @@
-# Rust Recipe Gallery
-Learning Rust by writing a full-stack application
+# GoRust Recipe Gallery
+Learning Go and Rust by writing a full-stack application
 ![](screenshot.png)
 
 ## Opinions
-### Backend
+See `go-backend/` for go build steps
+### Rust Backend
 - **Framework**: Auxm
     - It's really awesome
     - Really modular, with layers, state, logging, and more

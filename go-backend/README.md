@@ -1,4 +1,9 @@
 # Go Recipe Gallery
+## Building and running
+```bash
+docker compose up --detach postgres
+just run-backend
+```
 
 ## TODO
 
